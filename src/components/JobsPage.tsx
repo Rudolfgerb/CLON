@@ -21,10 +21,48 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
   const [applicationError, setApplicationError] = useState('');
   const [applicationSuccess, setApplicationSuccess] = useState('');
 
+  // Mock data for own created jobs
+  const ownJobs = [
+    {
+      id: 1,
+      title: 'React Login-Komponente erstellen',
+      description: 'Benötige eine moderne Login-Komponente mit Validierung und schönem Design.',
+      type: 'cash',
+      payment: '€35/h',
+      totalPayment: '€140',
+      estimatedHours: 4,
+      location: 'Remote',
+      difficulty: 'Mittel',
+      tags: ['React', 'TypeScript', 'CSS'],
+      status: 'active',
+      applicationsCount: 3,
+      hasNewApplications: true,
+      expiresAt: 'Heute 18:00',
+      createdAt: 'Vor 2 Stunden'
+    },
+    {
+      id: 2,
+      title: 'Vue.js Dashboard erstellen',
+      description: 'Einfaches Admin-Dashboard mit Vue.js und Tailwind CSS.',
+      type: 'cash',
+      payment: '€40/h',
+      totalPayment: '€200',
+      estimatedHours: 5,
+      location: 'Remote',
+      difficulty: 'Mittel',
+      tags: ['Vue.js', 'Tailwind', 'JavaScript'],
+      status: 'active',
+      applicationsCount: 1,
+      hasNewApplications: false,
+      expiresAt: 'Morgen 14:00',
+      createdAt: 'Gestern'
+    }
+  ];
   const jobCategories = [
     { id: 'all', label: 'Alle', count: 47 },
     { id: 'cash', label: 'Cash Jobs', count: 24 },
     { id: 'karma', label: 'Karma Jobs', count: 24 },
+    { id: 'listings', label: 'Jobinserate', count: ownJobs.length },
   ];
 
   const jobs = [
@@ -103,7 +141,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          job.company.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = selectedFilter === 'all' || job.type === selectedFilter;
+    const matchesFilter = selectedFilter === 'all' || job.type === selectedFilter || selectedFilter === 'listings';
     return matchesSearch && matchesFilter;
   });
 
@@ -245,9 +283,14 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
                   : isDark
                     ? 'bg-slate-800 text-gray-300 hover:bg-slate-700'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              } ${category.id === 'listings' && ownJobs.some(job => job.hasNewApplications) ? 'animate-pulse ring-2 ring-orange-500/50' : ''}`}
             >
-              {category.label} ({category.count})
+              <div className="flex items-center space-x-2">
+                <span>{category.label} ({category.count})</span>
+                {category.id === 'listings' && ownJobs.some(job => job.hasNewApplications) && (
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-ping"></div>
+                )}
+              </div>
             </button>
           ))}
         </div>
