@@ -444,38 +444,86 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
                 <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   Job läuft ab nach
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={jobData.maxDuration.type}
-                    onChange={(e) => updateJobData('maxDuration', { 
-                      ...jobData.maxDuration, 
-                      type: e.target.value,
-                      value: e.target.value === 'hours' ? 24 : 7
-                    })}
-                    className={`px-3 py-3 rounded-xl border transition-colors ${
-                      isDark 
-                        ? 'bg-slate-700 border-slate-600 text-white' 
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500`}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Stunden Option */}
+                  <button
+                    type="button"
+                    onClick={() => updateJobData('maxDuration', { type: 'hours', value: 24 })}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                      jobData.maxDuration.type === 'hours'
+                        ? 'border-purple-500 bg-purple-500/20'
+                        : isDark
+                          ? 'border-slate-600 hover:border-slate-500'
+                          : 'border-gray-200 hover:border-gray-300'
+                    }`}
                   >
-                    <option value="hours">Stunden</option>
-                    <option value="days">Tagen</option>
-                  </select>
-                  <input
-                    type="number"
-                    min="1"
-                    max={jobData.maxDuration.type === 'hours' ? 72 : 30}
-                    value={jobData.maxDuration.value}
-                    onChange={(e) => updateJobData('maxDuration', { 
-                      ...jobData.maxDuration, 
-                      value: parseInt(e.target.value) || 1 
-                    })}
-                    className={`px-3 py-3 rounded-xl border transition-colors ${
-                      isDark 
-                        ? 'bg-slate-700 border-slate-600 text-white' 
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500`}
-                  />
+                    <div className="text-center">
+                      <Clock className={`w-6 h-6 mx-auto mb-2 ${
+                        jobData.maxDuration.type === 'hours' ? 'text-purple-500' : isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`} />
+                      <h3 className={`font-semibold text-sm mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Stunden
+                      </h3>
+                      {jobData.maxDuration.type === 'hours' && (
+                        <input
+                          type="number"
+                          min="1"
+                          max="72"
+                          value={jobData.maxDuration.value}
+                          onChange={(e) => updateJobData('maxDuration', { 
+                            type: 'hours', 
+                            value: parseInt(e.target.value) || 1 
+                          })}
+                          className={`w-16 px-2 py-1 rounded-lg border text-center text-sm ${
+                            isDark 
+                              ? 'bg-slate-700 border-slate-600 text-white' 
+                              : 'bg-white border-gray-300 text-gray-900'
+                          } focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Tage Option */}
+                  <button
+                    type="button"
+                    onClick={() => updateJobData('maxDuration', { type: 'days', value: 7 })}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                      jobData.maxDuration.type === 'days'
+                        ? 'border-purple-500 bg-purple-500/20'
+                        : isDark
+                          ? 'border-slate-600 hover:border-slate-500'
+                          : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <Calendar className={`w-6 h-6 mx-auto mb-2 ${
+                        jobData.maxDuration.type === 'days' ? 'text-purple-500' : isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`} />
+                      <h3 className={`font-semibold text-sm mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Tage
+                      </h3>
+                      {jobData.maxDuration.type === 'days' && (
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={jobData.maxDuration.value}
+                          onChange={(e) => updateJobData('maxDuration', { 
+                            type: 'days', 
+                            value: parseInt(e.target.value) || 1 
+                          })}
+                          className={`w-16 px-2 py-1 rounded-lg border text-center text-sm ${
+                            isDark 
+                              ? 'bg-slate-700 border-slate-600 text-white' 
+                              : 'bg-white border-gray-300 text-gray-900'
+                          } focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
+                    </div>
+                  </button>
                 </div>
                 <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Job wird automatisch gelöscht am: {calculateExpirationDate()}
