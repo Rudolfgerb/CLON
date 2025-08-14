@@ -253,7 +253,18 @@ function App() {
             <div className="px-6 py-4">
               <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>Schnellaktionen</h3>
               <div className="grid grid-cols-2 gap-4">
-                <button className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/25">
+                <button 
+                  onClick={() => {
+                    setActiveTab('jobs');
+                    // Small delay to ensure tab is active before setting filter
+                    setTimeout(() => {
+                      // This will be handled by JobsPage component
+                      const event = new CustomEvent('setJobFilter', { detail: 'cash' });
+                      window.dispatchEvent(event);
+                    }, 100);
+                  }}
+                  className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/25"
+                >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <Euro className="w-8 h-8 mb-3 relative z-10" />
                   <div className="text-left relative z-10">
@@ -262,7 +273,18 @@ function App() {
                   </div>
                 </button>
                 
-                <button className="group relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/25">
+                <button 
+                  onClick={() => {
+                    setActiveTab('jobs');
+                    // Small delay to ensure tab is active before setting filter
+                    setTimeout(() => {
+                      // This will be handled by JobsPage component
+                      const event = new CustomEvent('setJobFilter', { detail: 'karma' });
+                      window.dispatchEvent(event);
+                    }, 100);
+                  }}
+                  className="group relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/25"
+                >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <Star className="w-8 h-8 mb-3 relative z-10" />
                   <div className="text-left relative z-10">

@@ -23,6 +23,19 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications }) => {
   const [applicationError, setApplicationError] = useState('');
   const [applicationSuccess, setApplicationSuccess] = useState('');
 
+  // Listen for filter changes from dashboard
+  useEffect(() => {
+    const handleSetJobFilter = (event: CustomEvent) => {
+      setSelectedFilter(event.detail);
+    };
+
+    window.addEventListener('setJobFilter', handleSetJobFilter as EventListener);
+    
+    return () => {
+      window.removeEventListener('setJobFilter', handleSetJobFilter as EventListener);
+    };
+  }, []);
+
   // Mock data for own created jobs
   const ownJobs = [
     {
