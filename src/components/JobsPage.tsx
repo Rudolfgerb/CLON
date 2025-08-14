@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, MapPin, Clock, Euro, Star, Briefcase, Users, TrendingUp } from 'lucide-react';
+import { Search, Filter, MapPin, Clock, Euro, Star, Briefcase, Users, TrendingUp, X, Send, User, Mail, FileText, AlertCircle } from 'lucide-react';
 
 interface JobsPageProps {
   isDark: boolean;
@@ -8,6 +8,18 @@ interface JobsPageProps {
 const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [applicationData, setApplicationData] = useState({
+    message: '',
+    hourlyRate: '',
+    estimatedHours: '',
+    experience: '',
+    portfolio: ''
+  });
+  const [applicationLoading, setApplicationLoading] = useState(false);
+  const [applicationError, setApplicationError] = useState('');
+  const [applicationSuccess, setApplicationSuccess] = useState('');
 
   const jobCategories = [
     { id: 'all', label: 'Alle', count: 47 },
@@ -95,8 +107,68 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
     return matchesSearch && matchesFilter;
   });
 
+  const handleJobClick = (job: any) => {
+    setSelectedJob(job);
+    setShowApplicationModal(true);
+    // Pre-fill hourly rate if it's a cash job
+    if (job.type === 'cash' && job.payment) {
+      const rate = job.payment.replace('€', '').replace('/h', '');
+      setApplicationData(prev => ({ ...prev, hourlyRate: rate }));
+    }
+  };
+
+  const closeApplicationModal = () => {
+    setShowApplicationModal(false);
+    setSelectedJob(null);
+    setApplicationData({
+      message: '',
+      hourlyRate: '',
+      estimatedHours: '',
+      experience: '',
+      portfolio: ''
+    });
+    setApplicationError('');
+    setApplicationSuccess('');
+  };
+
+  const handleApplicationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setApplicationLoading(true);
+    setApplicationError('');
+
+    try {
+      // Validate required fields
+      if (!applicationData.message.trim()) {
+        throw new Error('Bewerbungsnachricht ist erforderlich');
+      }
+      if (selectedJob?.type === 'cash' && !applicationData.hourlyRate) {
+        throw new Error('Stundensatz ist erforderlich');
+      }
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setApplicationSuccess('Bewerbung erfolgreich gesendet!');
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        closeApplicationModal();
+      }, 2000);
+
+    } catch (error: any) {
+      setApplicationError(error.message || 'Fehler beim Senden der Bewerbung');
+    } finally {
+      setApplicationLoading(false);
+    }
+  };
+
+  const updateApplicationData = (field: string, value: string) => {
+    setApplicationData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto pb-32">
+    <>
+      <div className="flex-1 overflow-y-auto pb-32">
       {/* Header */}
       <div className="px-6 py-6">
         <h1 className={`text-2xl font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -163,6 +235,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
         {filteredJobs.map((job) => (
           <div
             key={job.id}
+            onClick={() => handleJobClick(job)}
             className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group cursor-pointer relative overflow-hidden ${
               job.id === 1 ? 'ring-2 ring-green-500/30 shadow-green-500/20' : ''
             }`}
@@ -259,6 +332,233 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
         ))}
       </div>
     </div>
+
+      {/* Application Modal */}
+      {showApplicationModal && selectedJob && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl p-6 w-full max-w-2xl border shadow-2xl max-h-[90vh] overflow-y-auto`}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Auf Job bewerben
+                </h2>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {selectedJob.title} • {selectedJob.company}
+                </p>
+              </div>
+              <button
+                onClick={closeApplicationModal}
+                className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
+              >
+                <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+              </button>
+            </div>
+
+            {/* Job Summary */}
+            <div className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-2xl p-4 border mb-6`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {selectedJob.title}
+                </h3>
+                {selectedJob.type === 'cash' ? (
+                  <div className="flex items-center bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium">
+                    <Euro className="w-4 h-4 mr-1" />
+                    {selectedJob.payment}
+                  </div>
+                ) : (
+                  <div className="flex items-center bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full text-sm font-medium">
+                    <Star className="w-4 h-4 mr-1" />
+                    {selectedJob.karma}
+                  </div>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className={`flex items-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <MapPin className="w-4 h-4 mr-2" />
+                  {selectedJob.location}
+                </div>
+                <div className={`flex items-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <Clock className="w-4 h-4 mr-2" />
+                  {selectedJob.duration}
+                </div>
+              </div>
+
+              {selectedJob.totalPayment && (
+                <div className="mt-3 pt-3 border-t border-slate-600">
+                  <div className="flex items-center justify-between">
+                    <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Gesamtbetrag:
+                    </span>
+                    <span className="text-xl font-bold text-green-500">
+                      {selectedJob.totalPayment}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Application Form */}
+            <form onSubmit={handleApplicationSubmit} className="space-y-6">
+              {/* Personal Message */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Bewerbungsnachricht <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <FileText className={`absolute left-4 top-4 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <textarea
+                    rows={4}
+                    value={applicationData.message}
+                    onChange={(e) => updateApplicationData('message', e.target.value)}
+                    placeholder="Warum sind Sie der richtige Kandidat für diesen Job?"
+                    className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors resize-none ${
+                      isDark 
+                        ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Cash Job Specific Fields */}
+              {selectedJob.type === 'cash' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Ihr Stundensatz (€) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Euro className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.50"
+                        value={applicationData.hourlyRate}
+                        onChange={(e) => updateApplicationData('hourlyRate', e.target.value)}
+                        placeholder="35.00"
+                        className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
+                          isDark 
+                            ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                            : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Geschätzte Stunden
+                    </label>
+                    <div className="relative">
+                      <Clock className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={applicationData.estimatedHours}
+                        onChange={(e) => updateApplicationData('estimatedHours', e.target.value)}
+                        placeholder="4"
+                        className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
+                          isDark 
+                            ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                            : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Experience */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Relevante Erfahrung
+                </label>
+                <div className="relative">
+                  <User className={`absolute left-4 top-4 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <textarea
+                    rows={3}
+                    value={applicationData.experience}
+                    onChange={(e) => updateApplicationData('experience', e.target.value)}
+                    placeholder="Beschreiben Sie Ihre Erfahrung mit den benötigten Skills..."
+                    className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors resize-none ${
+                      isDark 
+                        ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                  />
+                </div>
+              </div>
+
+              {/* Portfolio */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Portfolio/Links
+                </label>
+                <div className="relative">
+                  <Mail className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <input
+                    type="url"
+                    value={applicationData.portfolio}
+                    onChange={(e) => updateApplicationData('portfolio', e.target.value)}
+                    placeholder="https://github.com/username oder Portfolio-Link"
+                    className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
+                      isDark 
+                        ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                  />
+                </div>
+              </div>
+
+              {/* Error/Success Messages */}
+              {applicationError && (
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 flex items-center space-x-3">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <p className="text-red-200 text-sm">{applicationError}</p>
+                </div>
+              )}
+
+              {applicationSuccess && (
+                <div className="bg-green-500/20 border border-green-500/30 rounded-xl p-4 flex items-center space-x-3">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                  <p className="text-green-200 text-sm">{applicationSuccess}</p>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={closeApplicationModal}
+                  className={`flex-1 px-6 py-4 rounded-xl border font-semibold transition-all duration-300 ${
+                    isDark 
+                      ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' 
+                      : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={applicationLoading}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  <Send className="w-5 h-5" />
+                  <span>{applicationLoading ? 'Wird gesendet...' : 'Bewerbung senden'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
