@@ -45,11 +45,17 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
       setCurrentPage('payments');
     };
 
+    const handleNavigateToProfile = () => {
+      setCurrentPage('profile');
+    };
+
     // Listen for navigation events from header
     window.addEventListener('navigateToPayments', handleNavigateToPayments);
+    window.addEventListener('navigateToProfile', handleNavigateToProfile);
 
     return () => {
       window.removeEventListener('navigateToPayments', handleNavigateToPayments);
+      window.removeEventListener('navigateToProfile', handleNavigateToProfile);
     };
   }, []);
 

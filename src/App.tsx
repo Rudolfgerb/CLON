@@ -337,9 +337,19 @@ function App() {
       <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} transition-colors duration-500`}>
         <div className="flex items-center justify-between p-6 pb-4">
           <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 rounded-full ${isDark ? 'bg-blue-600' : 'bg-blue-500'} flex items-center justify-center transition-colors duration-500`}>
+            <button
+              onClick={() => {
+                setActiveTab('more');
+                // Small delay to ensure tab is active before navigating to profile
+                setTimeout(() => {
+                  const event = new CustomEvent('navigateToProfile');
+                  window.dispatchEvent(event);
+                }, 100);
+              }}
+              className={`w-10 h-10 rounded-full ${isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-500 hover:bg-blue-600'} flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer`}
+            >
               <User className="w-5 h-5 text-white" />
-            </div>
+            </button>
             <div>
               <h1 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>
                 {userProfile?.full_name || 'CleanWork'}
