@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   X, 
@@ -29,6 +30,8 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
   const [success, setSuccess] = useState('');
   const [showRewardSystem, setShowRewardSystem] = useState(false);
   const [userKarma, setUserKarma] = useState(1247); // Mock user karma - should come from user profile
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showExitWarning, setShowExitWarning] = useState(false);
 
   // Form state
   const [jobData, setJobData] = useState({
@@ -113,6 +116,48 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
     }));
   };
 
+  // Track form changes
+  useEffect(() => {
+    const hasChanges = 
+      jobData.title.trim() !== '' ||
+      jobData.description.trim() !== '' ||
+      jobData.requirements.trim() !== '' ||
+      jobData.deliverables.trim() !== '' ||
+      jobData.tags.some(tag => tag.trim() !== '');
+    
+    setHasUnsavedChanges(hasChanges);
+  }, [jobData]);
+
+  // Prevent browser back/refresh with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  const handleBackClick = () => {
+    if (hasUnsavedChanges) {
+      setShowExitWarning(true);
+    } else {
+      onBack();
+    }
+  };
+
+  const confirmExit = () => {
+    setShowExitWarning(false);
+    onBack();
+  };
+
+  const cancelExit = () => {
+    setShowExitWarning(false);
+  };
+
   const calculateKarmaReward = () => {
     const baseKarma = helpTypes.find(type => type.id === jobData.helpType)?.karma || 50;
     const difficultyMultiplier = jobData.difficulty === 'easy' ? 1 : jobData.difficulty === 'medium' ? 1.5 : 2;
@@ -195,18 +240,58 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
       setError(error.message || 'Fehler beim Erstellen des Jobs');
     } finally {
       setLoading(false);
+      setHasUnsavedChanges(false);
     }
   };
 
   if (showRewardSystem) {
     return (
+      <>
+        {/* Exit Warning Modal for Reward System */}
+        {showExitWarning && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl p-6 w-full max-w-md border shadow-2xl`}>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-orange-500" />
+                </div>
+                <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Belohnung verlassen?
+                </h2>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Möchtest du die Belohnungs-Konfiguration wirklich verlassen? Alle Einstellungen gehen verloren.
+                </p>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={cancelExit}
+                  className={`flex-1 px-4 py-3 rounded-xl border font-semibold transition-all duration-300 ${
+                    isDark 
+                      ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' 
+                      : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={confirmExit}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-red-500/30"
+                >
+                  Trotzdem verlassen
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="px-6 py-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => setShowRewardSystem(false)}
+              onClick={handleBackClick}
                 className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
               >
                 <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
@@ -478,17 +563,57 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   return (
+    <>
+      {/* Exit Warning Modal */}
+      {showExitWarning && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl p-6 w-full max-w-md border shadow-2xl`}>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-orange-500" />
+              </div>
+              <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Ungespeicherte Änderungen
+              </h2>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Du hast ungespeicherte Änderungen. Möchtest du wirklich fortfahren? Alle Änderungen gehen verloren.
+              </p>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={cancelExit}
+                className={`flex-1 px-4 py-3 rounded-xl border font-semibold transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' 
+                    : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={confirmExit}
+                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-red-500/30"
+              >
+                Trotzdem verlassen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     <div className="flex-1 overflow-y-auto pb-32">
       <div className="px-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
             <button
-              onClick={onBack}
+              onClick={handleBackClick}
               className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
             >
               <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
@@ -505,6 +630,9 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
           <div className="flex items-center space-x-2 text-purple-500">
             <Star className="w-5 h-5" />
             <span className="font-semibold">+{calculateKarmaReward()} Karma</span>
+            {hasUnsavedChanges && (
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+            )}
           </div>
         </div>
 
@@ -983,6 +1111,7 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
         </form>
       </div>
     </div>
+    </>
   );
 };
 

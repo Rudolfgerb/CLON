@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   X, 
@@ -24,6 +25,8 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showExitWarning, setShowExitWarning] = useState(false);
 
   // Form state
   const [jobData, setJobData] = useState({
@@ -91,6 +94,50 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
       ...prev,
       tags: prev.tags.map((tag, i) => i === index ? value : tag)
     }));
+  };
+
+  // Track form changes
+  useEffect(() => {
+    const hasChanges = 
+      jobData.title.trim() !== '' ||
+      jobData.description.trim() !== '' ||
+      jobData.hourlyRate !== '' ||
+      jobData.fixedAmount !== '' ||
+      jobData.requirements.trim() !== '' ||
+      jobData.deliverables.trim() !== '' ||
+      jobData.tags.some(tag => tag.trim() !== '');
+    
+    setHasUnsavedChanges(hasChanges);
+  }, [jobData]);
+
+  // Prevent browser back/refresh with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  const handleBackClick = () => {
+    if (hasUnsavedChanges) {
+      setShowExitWarning(true);
+    } else {
+      onBack();
+    }
+  };
+
+  const confirmExit = () => {
+    setShowExitWarning(false);
+    onBack();
+  };
+
+  const cancelExit = () => {
+    setShowExitWarning(false);
   };
 
   const calculateTotalPayment = () => {
@@ -187,17 +234,57 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
       setError(error.message || 'Fehler beim Erstellen des Jobs');
     } finally {
       setLoading(false);
+      setHasUnsavedChanges(false);
     }
   };
 
   return (
+    <>
+      {/* Exit Warning Modal */}
+      {showExitWarning && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl p-6 w-full max-w-md border shadow-2xl`}>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-orange-500" />
+              </div>
+              <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Ungespeicherte Änderungen
+              </h2>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Du hast ungespeicherte Änderungen. Möchtest du wirklich fortfahren? Alle Änderungen gehen verloren.
+              </p>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={cancelExit}
+                className={`flex-1 px-4 py-3 rounded-xl border font-semibold transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' 
+                    : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={confirmExit}
+                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-red-500/30"
+              >
+                Trotzdem verlassen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     <div className="flex-1 overflow-y-auto pb-32">
       <div className="px-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
             <button
-              onClick={onBack}
+              onClick={handleBackClick}
               className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
             >
               <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
@@ -214,6 +301,9 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
           <div className="flex items-center space-x-2 text-green-500">
             <Euro className="w-5 h-5" />
             <span className="font-semibold">€{calculateTotalPayment()}</span>
+            {hasUnsavedChanges && (
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+            )}
           </div>
         </div>
 
@@ -713,6 +803,7 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
         </form>
       </div>
     </div>
+    </>
   );
 };
 
