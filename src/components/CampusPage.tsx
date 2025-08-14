@@ -39,6 +39,53 @@ const CampusPage: React.FC<CampusPageProps> = ({ isDark }) => {
   });
   const [showAchievements, setShowAchievements] = useState(false);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
+  const [selectedBubble, setSelectedBubble] = useState<any>(null);
+  const [showCreateBubble, setShowCreateBubble] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [currentUser] = useState('Du'); // Current user identifier
+  
+  // Mock data for bubbles
+  const [bubbles, setBubbles] = useState([
+    {
+      id: 1,
+      title: 'React Hilfe benötigt',
+      category: 'help',
+      description: 'Probleme mit useState Hook',
+      creator: 'Anna Schmidt',
+      creatorOnline: true,
+      participants: ['Anna Schmidt', 'Tom Weber', 'Lisa Müller', 'Du'],
+      maxParticipants: 10,
+      hasNewMessages: true,
+      lastActivity: 'vor 2 Min',
+      createdAt: new Date(Date.now() - 120000) // 2 minutes ago
+    },
+    {
+      id: 2,
+      title: 'JavaScript Best Practices',
+      category: 'discussion',
+      description: 'Diskussion über Clean Code',
+      creator: 'Tom Weber',
+      creatorOnline: true,
+      participants: ['Tom Weber', 'Anna Schmidt', 'Lisa Müller', 'Max Müller', 'Sarah Klein', 'Du', 'Mike Johnson'],
+      maxParticipants: 10,
+      hasNewMessages: true,
+      lastActivity: 'vor 5 Min',
+      createdAt: new Date(Date.now() - 300000) // 5 minutes ago
+    },
+    {
+      id: 3,
+      title: 'Todo-App Projekt',
+      category: 'project',
+      description: 'Gemeinsam eine Todo-App entwickeln',
+      creator: 'Du',
+      creatorOnline: true,
+      participants: ['Du', 'Lisa Müller', 'Anna Schmidt'],
+      maxParticipants: 10,
+      hasNewMessages: false,
+      lastActivity: 'vor 10 Min',
+      createdAt: new Date(Date.now() - 600000) // 10 minutes ago
+    }
+  ]);
 
   // Mock data for active bubbles
   const activeBubbles = [
