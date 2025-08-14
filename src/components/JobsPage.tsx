@@ -6,7 +6,13 @@ interface JobsPageProps {
   onShowNotifications?: () => void;
 }
 
-const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications }) => {
+interface JobsPageProps {
+  isDark: boolean;
+  onShowNotifications?: () => void;
+  user?: any;
+}
+
+const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedJob, setSelectedJob] = useState<any>(null);
@@ -203,7 +209,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications }) => {
       // Create application in database
       const applicationPayload = {
         job_id: selectedJob.id,
-        applicant_id: 'temp-user-id', // TODO: Replace with actual user ID
+        applicant_id: user?.id || 'temp-user-id',
         message: applicationData.message.trim(),
         hourly_rate: selectedJob.type === 'cash' ? parseFloat(applicationData.hourlyRate) : null,
         estimated_hours: applicationData.estimatedHours ? parseInt(applicationData.estimatedHours) : null,
@@ -226,7 +232,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications }) => {
       const { error: notificationError } = await supabase
         .from('notifications')
         .insert({
-          user_id: selectedJob.created_by || 'temp-creator-id', // TODO: Get from job
+          user_id: selectedJob.created_by || 'temp-creator-id',
           type: 'new_application',
           title: 'Neue Bewerbung erhalten',
           message: `${applicationData.message.substring(0, 100)}...`,
@@ -234,7 +240,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications }) => {
             job_id: selectedJob.id,
             job_title: selectedJob.title,
             application_id: application.id,
-            applicant_name: 'Bewerber', // TODO: Get from user profile
+            applicant_name: user?.user_metadata?.full_name || 'Bewerber',
             hourly_rate: applicationData.hourlyRate
           }
         });

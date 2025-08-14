@@ -62,6 +62,7 @@ function App() {
         loadUserData(session.user.id);
       } else {
         setUserProfile(null);
+        setLoading(false);
       }
     });
 
@@ -77,7 +78,7 @@ function App() {
       subscription.unsubscribe();
       window.removeEventListener('notificationRead', handleNotificationRead);
     };
-  }, []);
+  }, [user]);
 
   // Load real user data
   const loadUserData = async (userId: string) => {
@@ -231,9 +232,15 @@ function App() {
 
       if (error) throw error;
       
+      if (!profile) {
+        // Profile doesn't exist, will be created by loadUserProfile
+        return;
+      }
+      
       // Check if profile needs updates (missing name or default values)
       const needsUpdate = !profile?.full_name || 
                          profile.full_name === 'CleanWork' || 
+                         profile.full_name === 'CleanWork User' ||
                          profile.full_name.trim() === '';
       
       setProfileNeedsUpdate(needsUpdate);
@@ -382,13 +389,39 @@ function App() {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error loading profile:', error);
         return;
       }
 
+      if (!data) {
+        // Create profile if it doesn't exist
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            email: user?.email || '',
+            full_name: user?.user_metadata?.full_name || 'CleanWork User',
+            karma: 0,
+            level: 1,
+            premium: false,
+            login_streak: 0
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          return;
+        }
+        
+        setUserProfile(newProfile);
+        setKarmaPoints(0);
+        setDailyStreak(0);
+        return;
+      }
       setUserProfile(data);
       setKarmaPoints(data?.karma || 0);
       setDailyStreak(data?.login_streak || 0);
@@ -458,7 +491,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'jobs':
-        return <JobsPage isDark={isDark} onShowNotifications={() => setShowNotifications(true)} />;
+        return <JobsPage isDark={isDark} onShowNotifications={() => setShowNotifications(true)} user={user} />;
       case 'campus':
         return <CampusPage isDark={isDark} />;
       case 'more':
