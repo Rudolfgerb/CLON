@@ -11,6 +11,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [isDark, setIsDark] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,10 +24,35 @@ function App() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        // Load user profile when user logs in
+        loadUserProfile(session.user.id);
+      } else {
+        setUserProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading profile:', error);
+        return;
+      }
+
+      setUserProfile(data);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
 
   const handleAuthSuccess = () => {
     // User state will be updated automatically by the auth listener
@@ -274,8 +300,12 @@ function App() {
               <User className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>CleanWork</h1>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`}>Karma: 1,247 Punkte</p>
+              <h1 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>
+                {userProfile?.full_name || 'CleanWork'}
+              </h1>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`}>
+                Karma: {userProfile?.karma || 0} Punkte
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
