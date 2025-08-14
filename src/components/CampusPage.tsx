@@ -39,53 +39,6 @@ const CampusPage: React.FC<CampusPageProps> = ({ isDark }) => {
   });
   const [showAchievements, setShowAchievements] = useState(false);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
-  const [selectedBubble, setSelectedBubble] = useState<any>(null);
-  const [showCreateBubble, setShowCreateBubble] = useState(false);
-  const [newMessage, setNewMessage] = useState('');
-  const [currentUser] = useState('Du'); // Current user identifier
-  
-  // Mock data for bubbles
-  const [bubbles, setBubbles] = useState([
-    {
-      id: 1,
-      title: 'React Hilfe benötigt',
-      category: 'help',
-      description: 'Probleme mit useState Hook',
-      creator: 'Anna Schmidt',
-      creatorOnline: true,
-      participants: ['Anna Schmidt', 'Tom Weber', 'Lisa Müller', 'Du'],
-      maxParticipants: 10,
-      hasNewMessages: true,
-      lastActivity: 'vor 2 Min',
-      createdAt: new Date(Date.now() - 120000) // 2 minutes ago
-    },
-    {
-      id: 2,
-      title: 'JavaScript Best Practices',
-      category: 'discussion',
-      description: 'Diskussion über Clean Code',
-      creator: 'Tom Weber',
-      creatorOnline: true,
-      participants: ['Tom Weber', 'Anna Schmidt', 'Lisa Müller', 'Max Müller', 'Sarah Klein', 'Du', 'Mike Johnson'],
-      maxParticipants: 10,
-      hasNewMessages: true,
-      lastActivity: 'vor 5 Min',
-      createdAt: new Date(Date.now() - 300000) // 5 minutes ago
-    },
-    {
-      id: 3,
-      title: 'Todo-App Projekt',
-      category: 'project',
-      description: 'Gemeinsam eine Todo-App entwickeln',
-      creator: 'Du',
-      creatorOnline: true,
-      participants: ['Du', 'Lisa Müller', 'Anna Schmidt'],
-      maxParticipants: 10,
-      hasNewMessages: false,
-      lastActivity: 'vor 10 Min',
-      createdAt: new Date(Date.now() - 600000) // 10 minutes ago
-    }
-  ]);
 
   // Mock data for active bubbles
   const activeBubbles = [
@@ -1321,6 +1274,11 @@ const user: User = {
                         ? 'bg-green-500/20 text-green-400'
                         : course.difficulty === 'Mittel'
                         ? 'bg-yellow-500/20 text-yellow-400'
+                      {bubble.creator === currentUser && (
+                        <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                          Deine Bubble
+                        </span>
+                      )}
                         : 'bg-red-500/20 text-red-400'
                     }`}>
                       {course.difficulty}
@@ -1331,13 +1289,26 @@ const user: User = {
                     <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       {course.progress}%
                     </span>
-                    <div className={`w-20 h-2 rounded-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                        👥 {bubble.participants.length}/{bubble.maxParticipants}
                       <div 
                         className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
                         style={{ width: `${course.progress}%` }}
                       />
+                      <span className={`flex items-center space-x-1 ${bubble.creatorOnline ? 'text-green-500' : 'text-red-500'}`}>
+                        <div className={`w-2 h-2 rounded-full ${bubble.creatorOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                        <span>{bubble.creator}</span>
+                      </span>
                     </div>
                   </div>
+                  
+                  {/* Bubble burst warning for creator */}
+                  {bubble.creator === currentUser && (
+                    <div className="mt-3 p-2 bg-orange-500/20 border border-orange-500/30 rounded-lg">
+                      <p className="text-xs text-orange-300">
+                        ⚠️ Wenn du diese Bubble verlässt, platzt sie für alle Teilnehmer!
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
