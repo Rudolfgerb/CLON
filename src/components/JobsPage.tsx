@@ -145,8 +145,49 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
         throw new Error('Stundensatz ist erforderlich');
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Create application in database
+      const applicationPayload = {
+        job_id: selectedJob.id,
+        applicant_id: 'temp-user-id', // TODO: Replace with actual user ID
+        message: applicationData.message.trim(),
+        hourly_rate: selectedJob.type === 'cash' ? parseFloat(applicationData.hourlyRate) : null,
+        estimated_hours: applicationData.estimatedHours ? parseInt(applicationData.estimatedHours) : null,
+        experience: applicationData.experience.trim(),
+        portfolio: applicationData.portfolio.trim(),
+        status: 'pending'
+      };
+
+      const { data: application, error: applicationError } = await supabase
+        .from('applications')
+        .insert(applicationPayload)
+        .select()
+        .single();
+
+      if (applicationError) {
+        throw applicationError;
+      }
+
+      // Create notification for job creator
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: selectedJob.created_by || 'temp-creator-id', // TODO: Get from job
+          type: 'new_application',
+          title: 'Neue Bewerbung erhalten',
+          message: `${applicationData.message.substring(0, 100)}...`,
+          data: {
+            job_id: selectedJob.id,
+            job_title: selectedJob.title,
+            application_id: application.id,
+            applicant_name: 'Bewerber', // TODO: Get from user profile
+            hourly_rate: applicationData.hourlyRate
+          }
+        });
+
+      if (notificationError) {
+        console.error('Error creating notification:', notificationError);
+        // Don't fail the application if notification fails
+      }
       
       setApplicationSuccess('Bewerbung erfolgreich gesendet!');
       
@@ -156,6 +197,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
       }, 2000);
 
     } catch (error: any) {
+      console.error('Error submitting application:', error);
       setApplicationError(error.message || 'Fehler beim Senden der Bewerbung');
     } finally {
       setApplicationLoading(false);

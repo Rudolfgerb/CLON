@@ -7,6 +7,7 @@ import CampusPage from './components/CampusPage';
 import MoreMenu from './components/MoreMenu';
 import AuthPage from './components/AuthPage';
 import CreateCashJobPage from './components/CreateCashJobPage';
+import NotificationsPage from './components/NotificationsPage';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -15,6 +16,8 @@ function App() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateCashJob, setShowCreateCashJob] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(3); // Mock data
 
   useEffect(() => {
     // Check current session
@@ -319,7 +322,17 @@ function App() {
           </div>
           <div className="flex items-center space-x-4">
             <span className={`font-bold text-lg ${isDark ? 'text-green-400' : 'text-green-600'} transition-colors duration-500`}>€247</span>
-            <Bell className={`w-6 h-6 ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`} />
+            <button
+              onClick={() => setShowNotifications(true)}
+              className="relative p-2 rounded-full hover:bg-slate-700/50 transition-colors"
+            >
+              <Bell className={`w-6 h-6 ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`} />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                  {unreadNotifications}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setIsDark(!isDark)}
               className={`p-2 rounded-full ${isDark ? 'bg-slate-700 text-yellow-400' : 'bg-gray-200 text-gray-700'} hover:scale-110 transition-all duration-300`}
@@ -331,7 +344,14 @@ function App() {
       </div>
 
       {/* Main Content */}
-      {renderContent()}
+      {showNotifications ? (
+        <NotificationsPage 
+          isDark={isDark} 
+          onBack={() => setShowNotifications(false)} 
+        />
+      ) : (
+        renderContent()
+      )}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
