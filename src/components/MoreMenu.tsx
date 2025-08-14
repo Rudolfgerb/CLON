@@ -42,6 +42,9 @@ type PageType = 'main' | 'profile' | 'payments' | 'notifications' | 'help' | 'pr
 
 const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [currentPage, setCurrentPage] = useState<PageType>('main');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showExitWarning, setShowExitWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
   useEffect(() => {
     const handleNavigateToPayments = () => {
@@ -201,6 +204,68 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
     setProfilePicture(null);
     setPhotoError('');
   };
+
+  // Track profile form changes
+  useEffect(() => {
+    if (currentPage === 'profile') {
+      const hasChanges = 
+        profileData.name !== 'Max Mustermann' ||
+        profileData.email !== 'max@example.com' ||
+        profileData.bio !== 'Frontend Developer mit 5 Jahren Erfahrung' ||
+        profileData.location !== 'Berlin, Deutschland' ||
+        profileData.website !== 'https://maxmustermann.dev' ||
+        profileData.phone !== '+49 123 456789' ||
+        profilePicture !== null;
+      
+      setHasUnsavedChanges(hasChanges);
+    } else {
+      setHasUnsavedChanges(false);
+    }
+  }, [profileData, profilePicture, currentPage]);
+
+  // Prevent browser back/refresh with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  const handleNavigation = (destination: PageType) => {
+    if (hasUnsavedChanges) {
+      setPendingNavigation(destination);
+      setShowExitWarning(true);
+    } else {
+      executeNavigation(destination);
+    }
+  };
+
+  const executeNavigation = (destination: PageType | string) => {
+    if (typeof destination === 'string') {
+      setCurrentPage(destination as PageType);
+    } else {
+      setCurrentPage(destination);
+    }
+  };
+
+  const confirmExit = () => {
+    setShowExitWarning(false);
+    if (pendingNavigation) {
+      executeNavigation(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  };
+
+  const cancelExit = () => {
+    setShowExitWarning(false);
+    setPendingNavigation(null);
+  };
+
   const renderMainMenu = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
@@ -260,197 +325,248 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   );
 
   const renderProfilePage = () => (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4 mb-6">
-        <button
-          onClick={() => setCurrentPage('main')}
-          className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
-        >
-          <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-        </button>
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Profil bearbeiten
-        </h1>
-      </div>
-
-      {/* Profile Picture */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Profilbild
-        </h2>
-        <div className="flex items-center space-x-4">
-          <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center overflow-hidden">
-            {profilePicture ? (
-              <img 
-                src={profilePicture} 
-                alt="Profilbild" 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User className="w-10 h-10 text-white" />
-            )}
-            {uploadingPhoto && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+    <>
+      {/* Exit Warning Modal */}
+      {showExitWarning && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl p-6 w-full max-w-md border shadow-2xl`}>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-orange-500" />
               </div>
-            )}
+              <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Ungespeicherte Änderungen
+              </h2>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Du hast ungespeicherte Änderungen am Profil. Möchtest du wirklich fortfahren? Alle Änderungen gehen verloren.
+              </p>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={cancelExit}
+                className={`flex-1 px-4 py-3 rounded-xl border font-semibold transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' 
+                    : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={confirmExit}
+                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-red-500/30"
+              >
+                Trotzdem verlassen
+              </button>
+            </div>
           </div>
-          <div className="flex-1">
-            <div className="flex items-center space-x-2 mb-2">
-              <label className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                  disabled={uploadingPhoto}
+        </div>
+      )}
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => handleNavigation('main')}
+              className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
+            >
+              <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+            </button>
+            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Profil bearbeiten
+            </h1>
+          </div>
+          {hasUnsavedChanges && (
+            <div className="flex items-center space-x-2 text-orange-500">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">Ungespeichert</span>
+            </div>
+          )}
+        </div>
+
+        {/* Profile Picture */}
+        <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
+          <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Profilbild
+          </h2>
+          <div className="flex items-center space-x-4">
+            <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center overflow-hidden">
+              {profilePicture ? (
+                <img 
+                  src={profilePicture} 
+                  alt="Profilbild" 
+                  className="w-full h-full object-cover"
                 />
-                {uploadingPhoto ? (
-                  <Upload className="w-4 h-4 animate-pulse" />
-                ) : (
-                  <Camera className="w-4 h-4" />
-                )}
-                <span>{uploadingPhoto ? 'Lädt hoch...' : 'Foto ändern'}</span>
-              </label>
-              {profilePicture && (
-                <button
-                  onClick={removeProfilePicture}
-                  className="p-2 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors"
-                  title="Foto entfernen"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              ) : (
+                <User className="w-10 h-10 text-white" />
+              )}
+              {uploadingPhoto && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
               )}
             </div>
-            <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              JPG, PNG oder GIF. Max. 5MB.
-            </p>
-            {photoError && (
-              <div className="mt-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg">
-                <p className="text-red-400 text-sm flex items-center space-x-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{photoError}</span>
-                </p>
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-2">
+                <label className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    disabled={uploadingPhoto}
+                  />
+                  {uploadingPhoto ? (
+                    <Upload className="w-4 h-4 animate-pulse" />
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
+                  <span>{uploadingPhoto ? 'Lädt hoch...' : 'Foto ändern'}</span>
+                </label>
+                {profilePicture && (
+                  <button
+                    onClick={removeProfilePicture}
+                    className="p-2 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors"
+                    title="Foto entfernen"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-            )}
-            {profilePicture && !photoError && (
-              <div className="mt-2 p-2 bg-green-500/20 border border-green-500/30 rounded-lg">
-                <p className="text-green-400 text-sm flex items-center space-x-2">
-                  <Check className="w-4 h-4 flex-shrink-0" />
-                  <span>Foto erfolgreich hochgeladen!</span>
-                </p>
-              </div>
-            )}
+              <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                JPG, PNG oder GIF. Max. 5MB.
+              </p>
+              {photoError && (
+                <div className="mt-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg">
+                  <p className="text-red-400 text-sm flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{photoError}</span>
+                  </p>
+                </div>
+              )}
+              {profilePicture && !photoError && (
+                <div className="mt-2 p-2 bg-green-500/20 border border-green-500/30 rounded-lg">
+                  <p className="text-green-400 text-sm flex items-center space-x-2">
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                    <span>Foto erfolgreich hochgeladen!</span>
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Personal Information */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Persönliche Informationen
-        </h2>
-        <div className="space-y-4">
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Vollständiger Name
-            </label>
-            <input
-              type="text"
-              value={profileData.name}
-              onChange={(e) => updateProfileData('name', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                isDark 
-                  ? 'bg-slate-700 border-slate-600 text-white' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-            />
-          </div>
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              E-Mail Adresse
-            </label>
-            <input
-              type="email"
-              value={profileData.email}
-              onChange={(e) => updateProfileData('email', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                isDark 
-                  ? 'bg-slate-700 border-slate-600 text-white' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-            />
-          </div>
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Telefonnummer
-            </label>
-            <input
-              type="tel"
-              value={profileData.phone}
-              onChange={(e) => updateProfileData('phone', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                isDark 
-                  ? 'bg-slate-700 border-slate-600 text-white' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-            />
-          </div>
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Bio
-            </label>
-            <textarea
-              rows={3}
-              value={profileData.bio}
-              onChange={(e) => updateProfileData('bio', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border transition-colors resize-none ${
-                isDark 
-                  ? 'bg-slate-700 border-slate-600 text-white' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-              placeholder="Erzähle etwas über dich..."
-            />
-          </div>
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Standort
-            </label>
-            <input
-              type="text"
-              value={profileData.location}
-              onChange={(e) => updateProfileData('location', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                isDark 
-                  ? 'bg-slate-700 border-slate-600 text-white' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-            />
-          </div>
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Website
-            </label>
-            <input
-              type="url"
-              value={profileData.website}
-              onChange={(e) => updateProfileData('website', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                isDark 
-                  ? 'bg-slate-700 border-slate-600 text-white' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-            />
+        {/* Personal Information */}
+        <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
+          <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Persönliche Informationen
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Vollständiger Name
+              </label>
+              <input
+                type="text"
+                value={profileData.name}
+                onChange={(e) => updateProfileData('name', e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                E-Mail Adresse
+              </label>
+              <input
+                type="email"
+                value={profileData.email}
+                onChange={(e) => updateProfileData('email', e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Telefonnummer
+              </label>
+              <input
+                type="tel"
+                value={profileData.phone}
+                onChange={(e) => updateProfileData('phone', e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Bio
+              </label>
+              <textarea
+                rows={3}
+                value={profileData.bio}
+                onChange={(e) => updateProfileData('bio', e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border transition-colors resize-none ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                placeholder="Erzähle etwas über dich..."
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Standort
+              </label>
+              <input
+                type="text"
+                value={profileData.location}
+                onChange={(e) => updateProfileData('location', e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Website
+              </label>
+              <input
+                type="url"
+                value={profileData.website}
+                onChange={(e) => updateProfileData('website', e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Save Button */}
-      <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-blue-500/30 flex items-center justify-center space-x-2">
-        <Save className="w-5 h-5" />
-        <span>Änderungen speichern</span>
-      </button>
-    </div>
+        {/* Save Button */}
+        <button 
+          onClick={() => setHasUnsavedChanges(false)}
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-blue-500/30 flex items-center justify-center space-x-2"
+        >
+          <Save className="w-5 h-5" />
+          <span>Änderungen speichern</span>
+        </button>
+      </div>
+    </>
   );
 
   const renderPaymentsPage = () => (
