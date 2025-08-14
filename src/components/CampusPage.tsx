@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 import { BookOpen, Play, CheckCircle, Clock, Star, Trophy, Target, Zap, Plus, Upload, Code, X, Save, Image } from 'lucide-react';
 
 interface CampusPageProps {
@@ -682,11 +683,90 @@ const user: User = {
 
             {/* Save Button */}
             <button
-              onClick={addNewLesson}
+              onClick={async () => {
+                try {
+                  // Get current user
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) {
+                    alert('Sie müssen angemeldet sein, um Lektionen zu erstellen.');
+                    return;
+                  }
+
+                  // Create course first
+                  const { data: courseData, error: courseError } = await supabase
+                    .from('courses')
+                    .insert({
+                      title: currentLesson.title || 'Neuer Kurs',
+                      description: currentLesson.description || 'Kurs Beschreibung',
+                      category: 'general',
+                      difficulty: 'Anfänger',
+                      created_by: user.id
+                    })
+                    .select()
+                    .single();
+
+                  if (courseError) {
+                    console.error('Fehler beim Erstellen des Kurses:', courseError);
+                    alert('Fehler beim Erstellen des Kurses');
+                    return;
+                  }
+
+                  // Create lessons
+                  const allLessons = [currentLesson, ...lessons];
+                  for (let i = 0; i < allLessons.length; i++) {
+                    const lesson = allLessons[i];
+                    if (lesson.title && lesson.description) {
+                      const { data: lessonData, error: lessonError } = await supabase
+                        .from('lessons')
+                        .insert({
+                          course_id: courseData.id,
+                          title: lesson.title,
+                          description: lesson.description,
+                          content: lesson.description, // Using description as content for now
+                          code_example: lesson.hasCode ? lesson.codeContent : null,
+                          karma_reward: 25,
+                          order_index: i
+                        })
+                        .select()
+                        .single();
+
+                      if (lessonError) {
+                        console.error('Fehler beim Erstellen der Lektion:', lessonError);
+                        continue;
+                      }
+
+                      // Handle media files (placeholder for now)
+                      if (lesson.hasMedia && lesson.mediaFiles && lesson.mediaFiles.length > 0) {
+                        // TODO: Upload files to Supabase Storage and save references
+                        console.log('Media files to upload:', lesson.mediaFiles);
+                      }
+                    }
+                  }
+
+                  alert('Kurs und Lektionen erfolgreich erstellt!');
+                  setShowCreateLesson(false);
+                  
+                  // Reset form
+                  setCurrentLesson({
+                    id: '',
+                    title: '',
+                    description: '',
+                    hasMedia: false,
+                    hasCode: false,
+                    codeContent: '',
+                    mediaFiles: []
+                  });
+                  setLessons([]);
+                  
+                } catch (error) {
+                  console.error('Unerwarteter Fehler:', error);
+                  alert('Ein unerwarteter Fehler ist aufgetreten');
+                }
+              }}
               className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-blue-500/30 flex items-center justify-center space-x-2"
             >
               <Save className="w-5 h-5" />
-              <span>Lektionen speichern</span>
+              <span>Kurs mit Lektionen speichern</span>
             </button>
           </div>
         </div>
