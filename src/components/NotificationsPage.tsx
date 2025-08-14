@@ -116,6 +116,12 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ isDark, onBack })
       setNotifications(prev => 
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
+      
+      // Trigger a refresh of notification states in parent component
+      const event = new CustomEvent('notificationRead', { 
+        detail: { notificationId } 
+      });
+      window.dispatchEvent(event);
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }

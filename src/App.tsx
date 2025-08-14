@@ -35,6 +35,16 @@ function App() {
   const [hasActiveJobs, setHasActiveJobs] = useState(false);
   const [completedJobsToday, setCompletedJobsToday] = useState(0);
 
+  // Notification-specific states for blinking control
+  const [notificationStates, setNotificationStates] = useState({
+    newJobs: false,
+    newApplications: false,
+    karmaEarned: false,
+    profileIncomplete: false,
+    friendInvites: false,
+    achievements: false,
+    campusUpdates: false
+  });
   useEffect(() => {
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -55,7 +65,18 @@ function App() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Listen for notification read events
+    const handleNotificationRead = () => {
+      if (user) {
+        loadNotifications(user.id);
+      }
+    };
+
+    window.addEventListener('notificationRead', handleNotificationRead);
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('notificationRead', handleNotificationRead);
+    };
   }, []);
 
   // Load real user data
@@ -91,6 +112,45 @@ function App() {
 
       if (error) throw error;
       setUnreadNotifications(data?.length || 0);
+      
+      // Update notification states based on actual notifications
+      const states = {
+        newJobs: false,
+        newApplications: false,
+        karmaEarned: false,
+        profileIncomplete: false,
+        friendInvites: false,
+        achievements: false,
+        campusUpdates: false
+      };
+      
+      data?.forEach(notification => {
+        switch (notification.type) {
+          case 'new_job':
+            states.newJobs = true;
+            break;
+          case 'new_application':
+            states.newApplications = true;
+            break;
+          case 'karma_earned':
+            states.karmaEarned = true;
+            break;
+          case 'profile_incomplete':
+            states.profileIncomplete = true;
+            break;
+          case 'friend_invite':
+            states.friendInvites = true;
+            break;
+          case 'achievement':
+            states.achievements = true;
+            break;
+          case 'campus_update':
+            states.campusUpdates = true;
+            break;
+        }
+      });
+      
+      setNotificationStates(states);
     } catch (error) {
       console.error('Error loading notifications:', error);
     }
@@ -109,6 +169,19 @@ function App() {
 
       if (jobsError) throw jobsError;
       setNewJobsCount(newJobs?.length || 0);
+      
+      // Create notification for new jobs if there are any
+      if (newJobs && newJobs.length > 0 && !notificationStates.newJobs) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            type: 'new_job',
+            title: `${newJobs.length} neue Jobs verfügbar`,
+            message: 'Entdecke neue Verdienstmöglichkeiten',
+            data: { job_count: newJobs.length }
+          });
+      }
       
       // Load user's active jobs
       const { data: activeJobs, error: activeError } = await supabase
@@ -160,6 +233,19 @@ function App() {
                          data.full_name.trim() === '';
       
       setProfileNeedsUpdate(needsUpdate);
+      
+      // Create notification if profile is incomplete
+      if (needsUpdate && !notificationStates.profileIncomplete) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            type: 'profile_incomplete',
+            title: 'Profil vervollständigen',
+            message: 'Vervollständige dein Profil für bessere Job-Chancen',
+            data: { action: 'complete_profile' }
+          });
+      }
     } catch (error) {
       console.error('Error checking profile:', error);
     }
@@ -184,6 +270,19 @@ function App() {
   const checkForAchievements = () => {
     // Streak achievement
     if (dailyStreak > 0 && dailyStreak % 7 === 0) {
+      // Create notification for streak achievement
+      if (user && !notificationStates.achievements) {
+        supabase
+          .from('notifications')
+          .insert({
+            user_id: user.id,
+            type: 'achievement',
+            title: '🔥 Streak Milestone erreicht!',
+            message: `${dailyStreak} Tage in Folge aktiv!`,
+            data: { achievement_type: 'streak', streak_days: dailyStreak }
+          });
+      }
+      
       addGameNotification({
         type: 'streak',
         title: '🔥 Streak Milestone!',
@@ -194,6 +293,19 @@ function App() {
     
     // Karma milestones
     if (todayKarmaEarned >= 100) {
+      // Create notification for karma milestone
+      if (user && !notificationStates.karmaEarned) {
+        supabase
+          .from('notifications')
+          .insert({
+            user_id: user.id,
+            type: 'karma_earned',
+            title: '⭐ Karma Master!',
+            message: `+${todayKarmaEarned} Karma heute verdient!`,
+            data: { karma_earned: todayKarmaEarned }
+          });
+      }
+      
       addGameNotification({
         type: 'karma',
         title: '⭐ Karma Master!',
@@ -204,6 +316,19 @@ function App() {
     
     // Job completion achievements
     if (completedJobsToday >= 3) {
+      // Create notification for productivity achievement
+      if (user && !notificationStates.achievements) {
+        supabase
+          .from('notifications')
+          .insert({
+            user_id: user.id,
+            type: 'achievement',
+            title: '🏆 Produktivitäts-Champion!',
+            message: `${completedJobsToday} Jobs heute abgeschlossen!`,
+            data: { achievement_type: 'productivity', jobs_completed: completedJobsToday }
+          });
+      }
+      
       addGameNotification({
         type: 'achievement',
         title: '🏆 Produktivitäts-Champion!',
@@ -497,10 +622,10 @@ function App() {
                       window.dispatchEvent(event);
                     }, 100);
                   }}
-                  className={`group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/25 ${newJobsCount > 0 ? 'animate-pulse' : ''}`}
+                  className={`group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/25 ${notificationStates.newJobs ? 'animate-pulse' : ''}`}
                 >
                   {/* Notification badge - only show if there are new jobs */}
-                  {newJobsCount > 0 && (
+                  {notificationStates.newJobs && (
                     <div className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold animate-bounce">
                       {newJobsCount}
                     </div>
@@ -510,7 +635,7 @@ function App() {
                   <div className="text-left relative z-10">
                     <div className="font-bold text-lg">Cash Jobs</div>
                     <div className="text-sm opacity-90">
-                      {newJobsCount > 0 ? `${newJobsCount} neue Jobs!` : 'Verfügbare Jobs'}
+                      {notificationStates.newJobs ? `${newJobsCount} neue Jobs!` : 'Verfügbare Jobs'}
                     </div>
                   </div>
                 </button>
@@ -525,10 +650,10 @@ function App() {
                       window.dispatchEvent(event);
                     }, 100);
                   }}
-                  className={`group relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/25 ${todayKarmaEarned > 0 ? 'ring-2 ring-orange-300 animate-pulse' : ''}`}
+                  className={`group relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/25 ${notificationStates.karmaEarned ? 'ring-2 ring-orange-300 animate-pulse' : ''}`}
                 >
                   {/* Pulsing ring effect - only if karma was earned today */}
-                  {todayKarmaEarned > 0 && (
+                  {notificationStates.karmaEarned && (
                     <div className="absolute inset-0 rounded-2xl border-2 border-orange-300 animate-ping opacity-30"></div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
@@ -536,7 +661,7 @@ function App() {
                   <div className="text-left relative z-10">
                     <div className="font-bold text-lg">Karma Jobs</div>
                     <div className="text-sm opacity-90">
-                      {todayKarmaEarned > 0 ? `+${todayKarmaEarned} heute verdient!` : 'Karma sammeln'}
+                      {notificationStates.karmaEarned ? `+${todayKarmaEarned} heute verdient!` : 'Karma sammeln'}
                     </div>
                   </div>
                 </button>
@@ -626,7 +751,7 @@ function App() {
               className={`w-10 h-10 rounded-full ${isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-500 hover:bg-blue-600'} flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer relative`}
             >
               {/* Profile update notification - only if profile needs update */}
-              {profileNeedsUpdate && (
+              {notificationStates.profileIncomplete && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-bounce"></div>
               )}
               <User className="w-5 h-5 text-white" />
@@ -718,10 +843,10 @@ function App() {
                 }`}
               >
                 {/* Special notifications for specific tabs - only show if there's real data */}
-                {item.id === 'jobs' && newJobsCount > 0 && (
+                {item.id === 'jobs' && notificationStates.newJobs && (
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
                 )}
-                {item.id === 'campus' && todayKarmaEarned > 0 && (
+                {item.id === 'campus' && notificationStates.campusUpdates && (
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-bounce"></div>
                 )}
                 {item.isCenter && (
