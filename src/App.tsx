@@ -66,9 +66,10 @@ function App() {
     );
   }
 
-  if (!user) {
-    return <AuthPage onAuthSuccess={handleAuthSuccess} />;
-  }
+  // Temporarily disabled for development
+  // if (!user) {
+  //   return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+  // }
 
   const stats = [
     { label: 'Meine Jobs', value: '12', color: 'text-blue-400' },
