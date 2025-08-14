@@ -350,7 +350,9 @@ function App() {
           onBack={() => setShowNotifications(false)} 
         />
       ) : (
-        renderContent()
+        <div className="relative">
+          {renderContent()}
+        </div>
       )}
 
       {/* Bottom Navigation */}
