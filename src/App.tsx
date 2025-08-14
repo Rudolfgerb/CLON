@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
-import { Home, Briefcase, Plus, GraduationCap, MoreHorizontal, User, Bell, Euro, Code, BookOpen, Star, ArrowRight, Moon, Sun, ArrowLeft, Users, TrendingUp, Clock } from 'lucide-react';
+import { Home, Briefcase, Plus, GraduationCap, MoreHorizontal, User, Bell, Euro, Code, BookOpen, Star, ArrowRight, Moon, Sun } from 'lucide-react';
 import JobsPage from './components/JobsPage';
 import CampusPage from './components/CampusPage';
 import MoreMenu from './components/MoreMenu';
@@ -9,6 +9,7 @@ import AuthPage from './components/AuthPage';
 import CreateCashJobPage from './components/CreateCashJobPage';
 import CreateKarmaJobPage from './components/CreateKarmaJobPage';
 import NotificationsPage from './components/NotificationsPage';
+import GameNotificationSystem from './components/GameNotificationSystem';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -19,8 +20,12 @@ function App() {
   const [showCreateCashJob, setShowCreateCashJob] = useState(false);
   const [showCreateKarmaJob, setShowCreateKarmaJob] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showActivities, setShowActivities] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(3); // Mock data
+  const [gameNotifications, setGameNotifications] = useState<any[]>([]);
+  const [showActivityDetails, setShowActivityDetails] = useState(false);
+  const [dailyStreak, setDailyStreak] = useState(7);
+  const [karmaPoints, setKarmaPoints] = useState(1247);
+  const [totalEarnings, setTotalEarnings] = useState(847);
 
   useEffect(() => {
     // Check current session
@@ -41,6 +46,48 @@ function App() {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Gamification System
+  useEffect(() => {
+    // Simulate random achievements and notifications
+    const achievementTimer = setInterval(() => {
+      const achievements = [
+        { type: 'achievement', title: '🏆 Neuer Erfolg!', message: 'Speed Demon freigeschaltet!', color: 'from-yellow-500 to-orange-500' },
+        { type: 'karma', title: '⭐ Karma erhalten!', message: '+25 Karma für abgeschlossenen Job', color: 'from-purple-500 to-pink-500' },
+        { type: 'streak', title: '🔥 Streak verlängert!', message: `${dailyStreak} Tage in Folge aktiv!`, color: 'from-red-500 to-orange-500' },
+        { type: 'level', title: '📈 Level Up!', message: 'Du bist jetzt Level 12!', color: 'from-blue-500 to-cyan-500' },
+        { type: 'bonus', title: '💰 Bonus erhalten!', message: '+€50 Aktivitätsbonus!', color: 'from-green-500 to-emerald-500' }
+      ];
+      
+      if (Math.random() > 0.7) { // 30% chance every interval
+        const randomAchievement = achievements[Math.floor(Math.random() * achievements.length)];
+        setGameNotifications(prev => [...prev, { ...randomAchievement, id: Date.now() }]);
+      }
+    }, 15000); // Every 15 seconds
+
+    // Daily reminder system
+    const reminderTimer = setInterval(() => {
+      const reminders = [
+        { type: 'reminder', title: '📚 Lernzeit!', message: 'Schau dir neue Campus-Kurse an', color: 'from-indigo-500 to-purple-500' },
+        { type: 'reminder', title: '💼 Job-Check!', message: 'Neue passende Jobs verfügbar', color: 'from-blue-500 to-indigo-500' },
+        { type: 'reminder', title: '⏰ Tägliche Aufgabe!', message: 'Vervollständige dein Tagesziel', color: 'from-orange-500 to-red-500' }
+      ];
+      
+      if (Math.random() > 0.8) { // 20% chance
+        const randomReminder = reminders[Math.floor(Math.random() * reminders.length)];
+        setGameNotifications(prev => [...prev, { ...randomReminder, id: Date.now() }]);
+      }
+    }, 25000); // Every 25 seconds
+
+    return () => {
+      clearInterval(achievementTimer);
+      clearInterval(reminderTimer);
+    };
+  }, [dailyStreak]);
+
+  const removeGameNotification = useCallback((id: number) => {
+    setGameNotifications(prev => prev.filter(notif => notif.id !== id));
   }, []);
 
   const loadUserProfile = async (userId: string) => {
@@ -81,88 +128,26 @@ function App() {
 
   const stats = [
     { label: 'Meine Jobs', value: '12', color: 'text-blue-400' },
-    { label: 'Verdienst', value: '€847', color: 'text-green-400' },
-    { label: 'Karma', value: '1,247', color: 'text-purple-400' },
+    { label: 'Verdienst', value: `€${totalEarnings}`, color: 'text-green-400' },
+    { label: 'Karma', value: karmaPoints.toLocaleString(), color: 'text-purple-400' },
   ];
 
   const activities = [
     {
-      id: 1,
       title: 'React Projekt',
       subtitle: '€120 • Abgeschlossen',
       time: 'Heute',
       karma: '+50 Karma',
       icon: Code,
       color: 'bg-blue-500',
-      type: 'job_completed',
-      details: 'Login-Komponente mit TypeScript erstellt',
-      client: 'StartupXYZ',
-      duration: '4 Stunden'
     },
     {
-      id: 2,
       title: 'JavaScript Tutorial',
       subtitle: 'Campus Lektion',
       time: 'Gestern',
       karma: '+25 Karma',
       icon: BookOpen,
       color: 'bg-purple-500',
-      type: 'course_completed',
-      details: 'ES6 Features und Arrow Functions',
-      progress: '100%',
-      duration: '2 Stunden'
-    },
-    {
-      id: 3,
-      title: 'Vue.js Dashboard',
-      subtitle: '€85 • In Bearbeitung',
-      time: 'Vor 2 Tagen',
-      karma: '+0 Karma',
-      icon: Code,
-      color: 'bg-orange-500',
-      type: 'job_active',
-      details: 'Admin-Panel mit Tailwind CSS',
-      client: 'TechCorp',
-      duration: '6 Stunden'
-    },
-    {
-      id: 4,
-      title: 'Code Review Session',
-      subtitle: 'Karma Job • Abgeschlossen',
-      time: 'Vor 3 Tagen',
-      karma: '+75 Karma',
-      icon: Star,
-      color: 'bg-green-500',
-      type: 'karma_completed',
-      details: 'React Hooks Best Practices Review',
-      community: 'Frontend Developers',
-      duration: '1.5 Stunden'
-    },
-    {
-      id: 5,
-      title: 'Python Backend API',
-      subtitle: '€200 • Abgelehnt',
-      time: 'Vor 4 Tagen',
-      karma: '+0 Karma',
-      icon: Code,
-      color: 'bg-red-500',
-      type: 'job_rejected',
-      details: 'FastAPI mit PostgreSQL Integration',
-      client: 'DataCorp',
-      reason: 'Andere Bewerbung ausgewählt'
-    },
-    {
-      id: 6,
-      title: 'CSS Grid Masterclass',
-      subtitle: 'Campus Kurs',
-      time: 'Vor 5 Tagen',
-      karma: '+30 Karma',
-      icon: BookOpen,
-      color: 'bg-indigo-500',
-      type: 'course_completed',
-      details: 'Moderne Layout-Techniken',
-      progress: '100%',
-      duration: '3 Stunden'
     },
   ];
 
@@ -182,187 +167,6 @@ function App() {
         return <CampusPage isDark={isDark} />;
       case 'more':
         return <MoreMenu isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />;
-      case 'activities':
-        if (showActivities) {
-          return (
-            <div className="flex-1 overflow-y-auto pb-32">
-              <div className="px-6 py-6">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4">
-                    <button
-                      onClick={() => {
-                        setShowActivities(false);
-                        setActiveTab('home');
-                      }}
-                      className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
-                    >
-                      <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-                    </button>
-                    <div>
-                      <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        Aktivitäten
-                      </h1>
-                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Deine letzten Jobs und Kurse
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats Overview */}
-                <div className="grid grid-cols-4 gap-4 mb-6">
-                  <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border hover:scale-105 transition-transform duration-300`}>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-500">3</div>
-                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Abgeschlossen</div>
-                    </div>
-                  </div>
-                  <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border hover:scale-105 transition-transform duration-300`}>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-500">1</div>
-                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Aktiv</div>
-                    </div>
-                  </div>
-                  <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border hover:scale-105 transition-transform duration-300`}>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-500">180</div>
-                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Karma</div>
-                    </div>
-                  </div>
-                  <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border hover:scale-105 transition-transform duration-300`}>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-500">€405</div>
-                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Verdienst</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Filter Tabs */}
-                <div className="flex space-x-2 mb-6">
-                  {[
-                    { id: 'all', label: 'Alle', count: activities.length },
-                    { id: 'jobs', label: 'Jobs', count: activities.filter(a => a.type.includes('job')).length },
-                    { id: 'courses', label: 'Kurse', count: activities.filter(a => a.type.includes('course')).length },
-                    { id: 'karma', label: 'Karma', count: activities.filter(a => a.type.includes('karma')).length }
-                  ].map((filter) => (
-                    <button
-                      key={filter.id}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 ${
-                        filter.id === 'all'
-                          ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                          : isDark
-                            ? 'bg-slate-800 text-gray-300 hover:bg-slate-700'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {filter.label} ({filter.count})
-                    </button>
-                  ))}
-                </div>
-
-                {/* Activities List */}
-                <div className="space-y-4">
-                  {activities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-6 border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group cursor-pointer`}
-                    >
-                      <div className="flex items-start space-x-4">
-                        <div className={`w-14 h-14 ${activity.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 relative`}>
-                          <activity.icon className="w-7 h-7 text-white" />
-                          {activity.type === 'job_active' && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full animate-pulse"></div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h4 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>
-                                {activity.title}
-                              </h4>
-                              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500 mb-1`}>
-                                {activity.details}
-                              </p>
-                              <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'} transition-colors duration-500`}>
-                                {activity.subtitle}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`}>
-                                {activity.time}
-                              </p>
-                              <p className={`text-sm font-medium ${
-                                activity.karma.includes('+') ? 'text-green-400' : 'text-gray-500'
-                              }`}>
-                                {activity.karma}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          {/* Additional Details */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 text-sm">
-                              {activity.client && (
-                                <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  <User className="w-4 h-4" />
-                                  <span>{activity.client}</span>
-                                </div>
-                              )}
-                              {activity.community && (
-                                <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  <Users className="w-4 h-4" />
-                                  <span>{activity.community}</span>
-                                </div>
-                              )}
-                              {activity.progress && (
-                                <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  <TrendingUp className="w-4 h-4" />
-                                  <span>{activity.progress}</span>
-                                </div>
-                              )}
-                              <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                                <Clock className="w-4 h-4" />
-                                <span>{activity.duration}</span>
-                              </div>
-                            </div>
-                            
-                            {/* Status Badge */}
-                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              activity.type === 'job_completed' || activity.type === 'course_completed' || activity.type === 'karma_completed'
-                                ? 'bg-green-500/20 text-green-400'
-                                : activity.type === 'job_active'
-                                ? 'bg-orange-500/20 text-orange-400'
-                                : activity.type === 'job_rejected'
-                                ? 'bg-red-500/20 text-red-400'
-                                : 'bg-gray-500/20 text-gray-400'
-                            }`}>
-                              {activity.type === 'job_completed' && '✅ Abgeschlossen'}
-                              {activity.type === 'course_completed' && '📚 Abgeschlossen'}
-                              {activity.type === 'karma_completed' && '⭐ Abgeschlossen'}
-                              {activity.type === 'job_active' && '🔄 In Bearbeitung'}
-                              {activity.type === 'job_rejected' && '❌ Abgelehnt'}
-                            </div>
-                          </div>
-                          
-                          {activity.reason && (
-                            <div className={`mt-3 p-3 rounded-lg ${isDark ? 'bg-red-900/20 border border-red-500/30' : 'bg-red-50 border border-red-200'}`}>
-                              <p className={`text-sm ${isDark ? 'text-red-300' : 'text-red-700'}`}>
-                                <strong>Grund:</strong> {activity.reason}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                        <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'} group-hover:translate-x-1 transition-transform duration-300`} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        }
-        return null;
       case 'add':
         if (showCreateCashJob) {
           return <CreateCashJobPage isDark={isDark} onBack={() => setShowCreateCashJob(false)} />;
@@ -484,15 +288,46 @@ function App() {
       default:
         return (
           <>
+            {/* Daily Streak Banner */}
+            <div className="px-6 py-2">
+              <div className={`${isDark ? 'bg-gradient-to-r from-orange-900/20 to-red-900/20 border-orange-500/30' : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200'} rounded-2xl p-4 border relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl animate-bounce">🔥</div>
+                    <div>
+                      <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {dailyStreak} Tage Streak!
+                      </h3>
+                      <p className={`text-sm ${isDark ? 'text-orange-300' : 'text-orange-700'}`}>
+                        Bleib dran für Bonus-Karma!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-orange-500">+{dailyStreak * 5}</div>
+                    <div className={`text-xs ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>Bonus Karma</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Welcome Back Section */}
             <div className="px-6 py-4">
-              <div className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-6 border transition-all duration-500 hover:scale-[1.02] transform`}>
+              <div className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-6 border transition-all duration-500 hover:scale-[1.02] transform relative overflow-hidden`}>
+                {/* Pulsing notification dot */}
+                <div className="absolute top-4 right-4 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
+                <div className="absolute top-4 right-4 w-3 h-3 bg-green-500 rounded-full"></div>
+                
                 <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>Willkommen zurück!</h2>
                 <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-4 transition-colors duration-500`}>Bereit für neue Herausforderungen?</p>
                 
                 <div className="grid grid-cols-3 gap-4">
                   {stats.map((stat, index) => (
-                    <div key={index} className="text-center">
+                    <div key={index} className="text-center relative">
+                      {index === 2 && ( // Karma stat gets special treatment
+                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                      )}
                       <div className={`text-2xl font-bold ${stat.color} transition-colors duration-500`}>{stat.value}</div>
                       <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} transition-colors duration-500`}>{stat.label}</div>
                     </div>
@@ -514,13 +349,17 @@ function App() {
                       window.dispatchEvent(event);
                     }, 100);
                   }}
-                  className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/25"
+                  className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/25 animate-pulse"
                 >
+                  {/* Notification badge */}
+                  <div className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold animate-bounce">
+                    3
+                  </div>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <Euro className="w-8 h-8 mb-3 relative z-10" />
                   <div className="text-left relative z-10">
                     <div className="font-bold text-lg">Cash Jobs</div>
-                    <div className="text-sm opacity-90">Geld verdienen</div>
+                    <div className="text-sm opacity-90">3 neue Jobs!</div>
                   </div>
                 </button>
                 
@@ -536,11 +375,13 @@ function App() {
                   }}
                   className="group relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/25"
                 >
+                  {/* Pulsing ring effect */}
+                  <div className="absolute inset-0 rounded-2xl border-2 border-orange-300 animate-ping opacity-30"></div>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <Star className="w-8 h-8 mb-3 relative z-10" />
                   <div className="text-left relative z-10">
                     <div className="font-bold text-lg">Karma Jobs</div>
-                    <div className="text-sm opacity-90">Punkte sammeln</div>
+                    <div className="text-sm opacity-90">+50 Bonus heute!</div>
                   </div>
                 </button>
               </div>
@@ -548,17 +389,26 @@ function App() {
 
             {/* Recent Activities */}
             <div className="px-6 py-4 pb-32">
-              <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>Letzte Aktivitäten</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>Letzte Aktivitäten</h3>
+                <button
+                  onClick={() => setShowActivityDetails(true)}
+                  className={`text-sm font-medium ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'} transition-colors relative`}
+                >
+                  <span className="relative z-10">Alle anzeigen</span>
+                  <div className="absolute inset-0 bg-blue-500/20 rounded-lg animate-pulse"></div>
+                </button>
+              </div>
               <div className="space-y-3">
                 {activities.map((activity, index) => (
-                  <div key={index} className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group cursor-pointer`}>
-                    <div 
-                      onClick={() => {
-                        setActiveTab('activities');
-                        setShowActivities(true);
-                      }}
-                      className="cursor-pointer"
-                    >
+                  <div key={index} className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group cursor-pointer relative overflow-hidden ${index === 0 ? 'ring-2 ring-green-500/50 animate-pulse' : ''}`}>
+                    {index === 0 && (
+                      <>
+                        <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                        <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent"></div>
+                      </>
+                    )}
                     <div className="flex items-center space-x-4">
                       <div className={`w-12 h-12 ${activity.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
                         <activity.icon className="w-6 h-6 text-white" />
@@ -569,31 +419,31 @@ function App() {
                       </div>
                       <div className="text-right">
                         <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`}>{activity.time}</p>
-                        <p className="text-sm text-green-400 font-medium">{activity.karma}</p>
+                        <p className={`text-sm font-medium ${index === 0 ? 'text-green-400 animate-pulse' : 'text-green-400'}`}>{activity.karma}</p>
                       </div>
                       <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'} group-hover:translate-x-1 transition-transform duration-300`} />
                     </div>
-                    </div>
                   </div>
                 ))}
-                
-                {/* Show All Activities Button */}
-                <button
-                  onClick={() => {
-                    setActiveTab('activities');
-                    setShowActivities(true);
-                  }}
-                  className={`w-full ${isDark ? 'bg-slate-800/80 border-slate-700 hover:bg-slate-700/80' : 'bg-white border-gray-200 hover:bg-gray-50'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] group text-center`}
-                >
-                  <div className="flex items-center justify-center space-x-3">
-                    <div className={`w-10 h-10 rounded-full ${isDark ? 'bg-slate-700' : 'bg-gray-100'} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                      <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-                    </div>
-                    <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      Alle Aktivitäten anzeigen
-                    </span>
+              </div>
+              
+              {/* Achievement Teaser */}
+              <div className={`mt-6 ${isDark ? 'bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-purple-500/30' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200'} rounded-2xl p-4 border relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
+                <div className="flex items-center space-x-4 relative z-10">
+                  <div className="text-3xl animate-bounce">🏆</div>
+                  <div className="flex-1">
+                    <h4 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Nächster Erfolg: Speed Demon
+                    </h4>
+                    <p className={`text-sm ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
+                      Noch 2 schnelle Jobs bis zum Erfolg!
+                    </p>
                   </div>
-                </button>
+                  <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
+                    <div className="text-purple-500 font-bold">2/3</div>
+                  </div>
+                </div>
               </div>
             </div>
           </>
@@ -616,8 +466,10 @@ function App() {
                   window.dispatchEvent(event);
                 }, 100);
               }}
-              className={`w-10 h-10 rounded-full ${isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-500 hover:bg-blue-600'} flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer`}
+              className={`w-10 h-10 rounded-full ${isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-500 hover:bg-blue-600'} flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer relative`}
             >
+              {/* Profile update notification */}
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-bounce"></div>
               <User className="w-5 h-5 text-white" />
             </button>
             <div>
@@ -625,7 +477,7 @@ function App() {
                 {userProfile?.full_name || 'CleanWork'}
               </h1>
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`}>
-                Karma: {userProfile?.karma || 0} Punkte
+                Karma: {karmaPoints} Punkte (+25 heute!)
               </p>
             </div>
           </div>
@@ -640,20 +492,23 @@ function App() {
                   window.dispatchEvent(event);
                 }, 100);
               }}
-              className={`font-bold text-lg ${isDark ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-500'} transition-all duration-300 hover:scale-110 cursor-pointer`}
+              className={`font-bold text-lg ${isDark ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-500'} transition-all duration-300 hover:scale-110 cursor-pointer relative`}
             >
-              €247
+              <span className="relative z-10">€{totalEarnings}</span>
+              <div className="absolute inset-0 bg-green-500/20 rounded-lg animate-pulse"></div>
             </button>
             <button
               onClick={() => setShowNotifications(true)}
-              className="relative p-2 rounded-full hover:bg-slate-700/50 transition-colors"
+              className="relative p-2 rounded-full hover:bg-slate-700/50 transition-colors animate-pulse"
             >
               <Bell className={`w-6 h-6 ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`} />
               {unreadNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center animate-bounce">
                   {unreadNotifications}
                 </span>
               )}
+              {/* Additional notification ring */}
+              <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping opacity-30"></div>
             </button>
             <button
               onClick={() => setIsDark(!isDark)}
@@ -675,9 +530,18 @@ function App() {
         renderContent()
       )}
 
+      {/* Game Notification System */}
+      <GameNotificationSystem 
+        notifications={gameNotifications}
+        onRemove={removeGameNotification}
+        isDark={isDark}
+      />
+
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
-        <div className={`${isDark ? 'bg-slate-800/95 backdrop-blur-xl border-slate-700' : 'bg-white/95 backdrop-blur-xl border-gray-200'} border-t transition-all duration-500`}>
+        <div className={`${isDark ? 'bg-slate-800/95 backdrop-blur-xl border-slate-700' : 'bg-white/95 backdrop-blur-xl border-gray-200'} border-t transition-all duration-500 relative`}>
+          {/* Notification glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent animate-pulse"></div>
           <div className="flex items-center justify-around py-2 px-4">
             {navItems.map((item) => (
               <button
@@ -695,6 +559,13 @@ function App() {
                       }`
                 }`}
               >
+                {/* Special notifications for specific tabs */}
+                {item.id === 'jobs' && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                )}
+                {item.id === 'campus' && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-bounce"></div>
+                )}
                 {activeTab === item.id && !item.isCenter && (
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl animate-pulse"></div>
                 )}
