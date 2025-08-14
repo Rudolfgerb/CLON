@@ -38,6 +38,91 @@ const CampusPage: React.FC<CampusPageProps> = ({ isDark }) => {
     mediaFiles: []
   });
   const [showAchievements, setShowAchievements] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<number[]>([]);
+
+  // Mock data for active bubbles
+  const activeBubbles = [
+    {
+      id: 1,
+      title: "React Hooks Hilfe gesucht",
+      category: "help",
+      creator: "Anna Schmidt",
+      participants: 4,
+      lastMessage: "Kann mir jemand mit useEffect helfen?",
+      lastActivity: "vor 2 Min",
+      color: "bg-orange-500",
+      hasNewMessages: true
+    },
+    {
+      id: 2,
+      title: "JavaScript Best Practices",
+      category: "discussion",
+      creator: "Tom Weber",
+      participants: 7,
+      lastMessage: "Was sind eure Lieblings-ES6 Features?",
+      lastActivity: "vor 5 Min",
+      color: "bg-blue-500",
+      hasNewMessages: false
+    },
+    {
+      id: 3,
+      title: "Gemeinsames Todo-App Projekt",
+      category: "project",
+      creator: "Lisa Müller",
+      participants: 3,
+      lastMessage: "Wer möchte beim Backend helfen?",
+      lastActivity: "vor 8 Min",
+      color: "bg-green-500",
+      hasNewMessages: true
+    }
+  ];
+
+  // Mock chat messages
+  const chatMessages = [
+    {
+      id: 1,
+      user: "Anna Schmidt",
+      text: "Hey! Kann mir jemand mit useEffect helfen? Ich verstehe nicht, warum mein Effect in einer Endlosschleife läuft.",
+      time: "14:32",
+      isOwn: false
+    },
+    {
+      id: 2,
+      user: "Du",
+      text: "Hi Anna! Das passiert oft, wenn du vergisst, ein Dependency Array anzugeben. Kannst du deinen Code zeigen?",
+      time: "14:33",
+      isOwn: true
+    },
+    {
+      id: 3,
+      user: "Tom Weber",
+      text: "Genau! Ohne Dependency Array läuft useEffect nach jedem Render. Füge [] hinzu für einmaliges Ausführen.",
+      time: "14:34",
+      isOwn: false
+    },
+    {
+      id: 4,
+      user: "Anna Schmidt",
+      text: "Ah verstehe! Danke euch beiden. Das hat geholfen! 🙏",
+      time: "14:35",
+      isOwn: false
+    }
+  ];
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+    // Here you would normally send the message to your backend
+    console.log('Sending message:', newMessage);
+    setNewMessage('');
+  };
+
+  const handleCreateBubble = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Here you would normally create the bubble in your backend
+    console.log('Creating bubble:', bubbleForm);
+    setShowCreateBubble(false);
+    setBubbleForm({ title: '', category: 'help', description: '' });
+  };
 
   const categories = [
     { id: 'all', label: 'Alle Kurse', icon: BookOpen },
