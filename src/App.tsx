@@ -112,7 +112,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'jobs':
-        return <JobsPage isDark={isDark} />;
+        return <JobsPage isDark={isDark} onShowNotifications={() => setShowNotifications(true)} />;
       case 'campus':
         return <CampusPage isDark={isDark} />;
       case 'more':
@@ -350,9 +350,7 @@ function App() {
           onBack={() => setShowNotifications(false)} 
         />
       ) : (
-        <div className="relative">
-          {renderContent()}
-        </div>
+        renderContent()
       )}
 
       {/* Bottom Navigation */}

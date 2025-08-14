@@ -3,6 +3,7 @@ import { Search, Filter, MapPin, Clock, Euro, Star, Briefcase, Users, TrendingUp
 
 interface JobsPageProps {
   isDark: boolean;
+  onShowNotifications?: () => void;
 }
 
 const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications }) => {
