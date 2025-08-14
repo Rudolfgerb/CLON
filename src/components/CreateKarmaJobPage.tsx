@@ -444,7 +444,7 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
                 <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   Job läuft ab nach
                 </label>
-                <div className="flex space-x-2">
+                <div className="grid grid-cols-2 gap-2">
                   <select
                     value={jobData.maxDuration.type}
                     onChange={(e) => updateJobData('maxDuration', { 
@@ -452,7 +452,7 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
                       type: e.target.value,
                       value: e.target.value === 'hours' ? 24 : 7
                     })}
-                    className={`px-4 py-3 rounded-xl border transition-colors ${
+                    className={`px-3 py-3 rounded-xl border transition-colors ${
                       isDark 
                         ? 'bg-slate-700 border-slate-600 text-white' 
                         : 'bg-gray-50 border-gray-200 text-gray-900'
@@ -470,7 +470,7 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
                       ...jobData.maxDuration, 
                       value: parseInt(e.target.value) || 1 
                     })}
-                    className={`flex-1 px-4 py-3 rounded-xl border transition-colors ${
+                    className={`px-3 py-3 rounded-xl border transition-colors ${
                       isDark 
                         ? 'bg-slate-700 border-slate-600 text-white' 
                         : 'bg-gray-50 border-gray-200 text-gray-900'
