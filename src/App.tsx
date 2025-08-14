@@ -7,6 +7,7 @@ import CampusPage from './components/CampusPage';
 import MoreMenu from './components/MoreMenu';
 import AuthPage from './components/AuthPage';
 import CreateCashJobPage from './components/CreateCashJobPage';
+import CreateKarmaJobPage from './components/CreateKarmaJobPage';
 import NotificationsPage from './components/NotificationsPage';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateCashJob, setShowCreateCashJob] = useState(false);
+  const [showCreateKarmaJob, setShowCreateKarmaJob] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(3); // Mock data
 
@@ -121,6 +123,9 @@ function App() {
         if (showCreateCashJob) {
           return <CreateCashJobPage isDark={isDark} onBack={() => setShowCreateCashJob(false)} />;
         }
+        if (showCreateKarmaJob) {
+          return <CreateKarmaJobPage isDark={isDark} onBack={() => setShowCreateKarmaJob(false)} />;
+        }
         return (
           <div className="flex-1 overflow-y-auto pb-32">
             <div className="px-6 py-6">
@@ -166,7 +171,10 @@ function App() {
                 </button>
 
                 {/* Karma Job Option */}
-                <button className="group w-full relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl p-8 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/30">
+                <button 
+                  onClick={() => setShowCreateKarmaJob(true)}
+                  className="group w-full relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl p-8 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/30"
+                >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-4">
