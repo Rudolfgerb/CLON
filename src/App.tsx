@@ -258,7 +258,6 @@ function App() {
                     setActiveTab('jobs');
                     // Small delay to ensure tab is active before setting filter
                     setTimeout(() => {
-                      // This will be handled by JobsPage component
                       const event = new CustomEvent('setJobFilter', { detail: 'cash' });
                       window.dispatchEvent(event);
                     }, 100);
