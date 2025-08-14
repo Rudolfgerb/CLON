@@ -1274,11 +1274,6 @@ const user: User = {
                         ? 'bg-green-500/20 text-green-400'
                         : course.difficulty === 'Mittel'
                         ? 'bg-yellow-500/20 text-yellow-400'
-                      {bubble.creator === currentUser && (
-                        <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                          Deine Bubble
-                        </span>
-                      )}
                         : 'bg-red-500/20 text-red-400'
                     }`}>
                       {course.difficulty}
@@ -1289,26 +1284,13 @@ const user: User = {
                     <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       {course.progress}%
                     </span>
-                        👥 {bubble.participants.length}/{bubble.maxParticipants}
+                    <div className={`w-20 h-2 rounded-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
                       <div 
                         className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
                         style={{ width: `${course.progress}%` }}
                       />
-                      <span className={`flex items-center space-x-1 ${bubble.creatorOnline ? 'text-green-500' : 'text-red-500'}`}>
-                        <div className={`w-2 h-2 rounded-full ${bubble.creatorOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                        <span>{bubble.creator}</span>
-                      </span>
                     </div>
                   </div>
-                  
-                  {/* Bubble burst warning for creator */}
-                  {bubble.creator === currentUser && (
-                    <div className="mt-3 p-2 bg-orange-500/20 border border-orange-500/30 rounded-lg">
-                      <p className="text-xs text-orange-300">
-                        ⚠️ Wenn du diese Bubble verlässt, platzt sie für alle Teilnehmer!
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
