@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { BookOpen, Play, CheckCircle, Clock, Star, Trophy, Target, Zap, Plus, Upload, Code, X, Save, Image, AlertCircle } from 'lucide-react';
+import { BookOpen, Play, CheckCircle, Clock, Star, Trophy, Target, Zap, Plus, Upload, Code, X, Save, Image, AlertCircle, MessageCircle, Send } from 'lucide-react';
 
 interface CampusPageProps {
   isDark: boolean;
@@ -39,41 +39,57 @@ const CampusPage: React.FC<CampusPageProps> = ({ isDark }) => {
   });
   const [showAchievements, setShowAchievements] = useState(false);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
+  const [showCreateBubble, setShowCreateBubble] = useState(false);
+  const [selectedBubble, setSelectedBubble] = useState(null);
+  const [newMessage, setNewMessage] = useState('');
+  const [bubbleForm, setBubbleForm] = useState({ title: '', category: 'help', description: '' });
+  const [onlineUsers] = useState(42);
 
-  // Mock data for active bubbles
-  const activeBubbles = [
+  // Mock data for bubbles
+  const bubbles = [
     {
       id: 1,
       title: "React Hooks Hilfe gesucht",
       category: "help",
-      creator: "Anna Schmidt",
-      participants: 4,
-      lastMessage: "Kann mir jemand mit useEffect helfen?",
+      createdBy: "Anna Schmidt",
+      participants: [
+        { name: "Anna Schmidt", color: "#3B82F6" },
+        { name: "Tom Weber", color: "#10B981" },
+        { name: "Lisa Müller", color: "#F59E0B" },
+        { name: "Du", color: "#8B5CF6" }
+      ],
       lastActivity: "vor 2 Min",
-      color: "bg-orange-500",
-      hasNewMessages: true
+      hasNewMessages: true,
+      creatorOnline: true
     },
     {
       id: 2,
       title: "JavaScript Best Practices",
       category: "discussion",
-      creator: "Tom Weber",
-      participants: 7,
-      lastMessage: "Was sind eure Lieblings-ES6 Features?",
+      createdBy: "Tom Weber",
+      participants: [
+        { name: "Tom Weber", color: "#10B981" },
+        { name: "Max Mustermann", color: "#EF4444" },
+        { name: "Sarah Klein", color: "#F59E0B" },
+        { name: "Du", color: "#8B5CF6" }
+      ],
       lastActivity: "vor 5 Min",
-      color: "bg-blue-500",
-      hasNewMessages: false
+      hasNewMessages: false,
+      creatorOnline: false
     },
     {
       id: 3,
       title: "Gemeinsames Todo-App Projekt",
       category: "project",
-      creator: "Lisa Müller",
-      participants: 3,
-      lastMessage: "Wer möchte beim Backend helfen?",
+      createdBy: "Du",
+      participants: [
+        { name: "Du", color: "#8B5CF6" },
+        { name: "Lisa Müller", color: "#F59E0B" },
+        { name: "Peter Schmidt", color: "#3B82F6" }
+      ],
       lastActivity: "vor 8 Min",
-      color: "bg-green-500",
-      hasNewMessages: true
+      hasNewMessages: true,
+      creatorOnline: true
     }
   ];
 
@@ -81,31 +97,27 @@ const CampusPage: React.FC<CampusPageProps> = ({ isDark }) => {
   const chatMessages = [
     {
       id: 1,
-      user: "Anna Schmidt",
+      sender: "Anna Schmidt",
       text: "Hey! Kann mir jemand mit useEffect helfen? Ich verstehe nicht, warum mein Effect in einer Endlosschleife läuft.",
-      time: "14:32",
-      isOwn: false
+      time: "14:32"
     },
     {
       id: 2,
-      user: "Du",
+      sender: "Du",
       text: "Hi Anna! Das passiert oft, wenn du vergisst, ein Dependency Array anzugeben. Kannst du deinen Code zeigen?",
-      time: "14:33",
-      isOwn: true
+      time: "14:33"
     },
     {
       id: 3,
-      user: "Tom Weber",
+      sender: "Tom Weber",
       text: "Genau! Ohne Dependency Array läuft useEffect nach jedem Render. Füge [] hinzu für einmaliges Ausführen.",
-      time: "14:34",
-      isOwn: false
+      time: "14:34"
     },
     {
       id: 4,
-      user: "Anna Schmidt",
+      sender: "Anna Schmidt",
       text: "Ah verstehe! Danke euch beiden. Das hat geholfen! 🙏",
-      time: "14:35",
-      isOwn: false
+      time: "14:35"
     }
   ];
 
@@ -122,6 +134,16 @@ const CampusPage: React.FC<CampusPageProps> = ({ isDark }) => {
     // Here you would normally send the message to the database
     console.log('Sending message:', newMessage);
     setNewMessage('');
+  };
+
+  const handleBubblePop = (bubbleId: number) => {
+    console.log('Popping bubble:', bubbleId);
+    setSelectedBubble(null);
+  };
+
+  const handleLeaveBubble = (bubbleId: number) => {
+    console.log('Leaving bubble:', bubbleId);
+    setSelectedBubble(null);
   };
 
   const categories = [
@@ -673,6 +695,228 @@ const user: User = {
                   Nächste Lektion
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* Community Chat Section */}
+          <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                  <MessageCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    💬 Community Chat
+                  </h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Erstelle Bubbles und chatte mit anderen Lernenden
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className={`text-sm font-medium ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                  {onlineUsers} online
+                </span>
+              </div>
+            </div>
+
+            {/* Chat Interface */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Bubble List */}
+              <div className="lg:col-span-1">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Aktive Bubbles ({bubbles.length})
+                  </h4>
+                  <button
+                    onClick={() => setShowCreateBubble(true)}
+                    className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform duration-300"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {bubbles.map((bubble) => (
+                    <div
+                      key={bubble.id}
+                      onClick={() => setSelectedBubble(bubble)}
+                      className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 hover:scale-[1.02] relative ${
+                        selectedBubble?.id === bubble.id
+                          ? isDark 
+                            ? 'bg-blue-900/30 border-blue-500/50' 
+                            : 'bg-blue-50 border-blue-200'
+                          : isDark
+                            ? 'bg-slate-700/50 border-slate-600 hover:bg-slate-700'
+                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      {bubble.hasNewMessages && (
+                        <div className="absolute top-2 right-2 w-3 h-3 bg-orange-500 rounded-full animate-ping"></div>
+                      )}
+                      
+                      {bubble.createdBy === 'Du' && (
+                        <div className="absolute top-2 left-2">
+                          <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                            Deine Bubble
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-start space-x-3 mt-2">
+                        <div className="text-2xl">{bubble.category === 'help' ? '🆘' : bubble.category === 'discussion' ? '💬' : '🚀'}</div>
+                        <div className="flex-1">
+                          <h5 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {bubble.title}
+                          </h5>
+                          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
+                            von {bubble.createdBy} {bubble.createdBy === 'Du' ? '👑' : ''}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <div className="flex -space-x-1">
+                                {bubble.participants.slice(0, 3).map((participant, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 ${
+                                      isDark ? 'border-slate-700' : 'border-white'
+                                    }`}
+                                    style={{ backgroundColor: participant.color }}
+                                  >
+                                    {participant.name.charAt(0)}
+                                  </div>
+                                ))}
+                              </div>
+                              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {bubble.participants.length}/10
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <div className={`w-2 h-2 rounded-full ${bubble.creatorOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {bubble.lastActivity}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chat Area */}
+              <div className="lg:col-span-2">
+                {selectedBubble ? (
+                  <div className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-xl border h-96 flex flex-col`}>
+                    {/* Chat Header */}
+                    <div className="p-4 border-b border-slate-600 flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="text-2xl">
+                          {selectedBubble.category === 'help' ? '🆘' : selectedBubble.category === 'discussion' ? '💬' : '🚀'}
+                        </div>
+                        <div>
+                          <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {selectedBubble.title}
+                          </h4>
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {selectedBubble.participants.length} Teilnehmer
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        {selectedBubble.createdBy === 'Du' && (
+                          <>
+                            <div className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-orange-900/30 text-orange-300' : 'bg-orange-100 text-orange-700'}`}>
+                              Wenn du gehst, platzt die Bubble!
+                            </div>
+                            <button
+                              onClick={() => handleBubblePop(selectedBubble.id)}
+                              className="px-3 py-1 bg-red-500 text-white text-xs rounded-full hover:bg-red-600 transition-colors"
+                            >
+                              💥 Bubble platzen lassen
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => handleLeaveBubble(selectedBubble.id)}
+                          className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                            isDark 
+                              ? 'bg-slate-600 text-gray-300 hover:bg-slate-500' 
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          Verlassen
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 p-4 overflow-y-auto space-y-3">
+                      {chatMessages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${message.sender === 'Du' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                            message.sender === 'Du'
+                              ? 'bg-blue-500 text-white'
+                              : isDark
+                                ? 'bg-slate-600 text-white'
+                                : 'bg-gray-200 text-gray-900'
+                          }`}>
+                            {message.sender !== 'Du' && (
+                              <div className="text-xs opacity-70 mb-1">{message.sender}</div>
+                            )}
+                            <div className="text-sm">{message.text}</div>
+                            <div className="text-xs opacity-70 mt-1">{message.time}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Message Input */}
+                    <div className="p-4 border-t border-slate-600">
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                          placeholder="Nachricht schreiben..."
+                          className={`flex-1 px-4 py-2 rounded-xl border transition-colors ${
+                            isDark 
+                              ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                        />
+                        <button
+                          onClick={handleSendMessage}
+                          disabled={!newMessage.trim()}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-xl border h-96 flex items-center justify-center`}>
+                    <div className="text-center">
+                      <MessageCircle className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <h4 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Wähle eine Bubble
+                      </h4>
+                      <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Klicke auf eine Bubble links, um zu chatten
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

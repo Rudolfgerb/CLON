@@ -96,4 +96,81 @@ export interface Notification {
   data: any;
   read: boolean;
   created_at: string;
+  priority?: string;
+  expires_at?: string;
+  action_url?: string;
+  category?: string;
+}
+
+export interface ChatBubble {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  creator_id: string;
+  max_participants: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BubbleParticipant {
+  id: string;
+  bubble_id: string;
+  user_id: string;
+  joined_at: string;
+  is_online: boolean;
+}
+
+export interface BubbleMessage {
+  id: string;
+  bubble_id: string;
+  user_id: string;
+  message: string;
+  created_at: string;
+}
+
+export interface KarmaTransaction {
+  id: string;
+  user_id: string;
+  transaction_type: 'karma_to_money' | 'money_to_karma' | 'job_reward' | 'daily_bonus' | 'achievement_bonus';
+  karma_amount: number;
+  money_amount: number;
+  exchange_rate: number;
+  status: 'pending' | 'completed' | 'failed';
+  description: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface UserWallet {
+  id: string;
+  user_id: string;
+  balance_euros: number;
+  total_earned: number;
+  total_spent: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserSession {
+  id: string;
+  user_id: string;
+  session_token: string;
+  is_active: boolean;
+  last_activity: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface UserActivityLog {
+  id: string;
+  user_id: string;
+  activity_type: string;
+  activity_data: any;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
 }
