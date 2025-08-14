@@ -10,7 +10,6 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
-  const [unreadApplications, setUnreadApplications] = useState<Set<string>>(new Set(['1'])); // Mock: Job 1 has unread applications
   const [applicationData, setApplicationData] = useState({
     message: '',
     hourlyRate: '',
@@ -37,7 +36,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
       tags: ['React', 'TypeScript', 'CSS'],
       status: 'active',
       applicationsCount: 3,
-      hasNewApplications: unreadApplications.has('1'),
+      hasNewApplications: true,
       expiresAt: 'Heute 18:00',
       createdAt: 'Vor 2 Stunden'
     },
@@ -54,7 +53,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
       tags: ['Vue.js', 'Tailwind', 'JavaScript'],
       status: 'active',
       applicationsCount: 1,
-      hasNewApplications: unreadApplications.has('2'),
+      hasNewApplications: false,
       expiresAt: 'Morgen 14:00',
       createdAt: 'Gestern'
     }
@@ -63,7 +62,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
     { id: 'all', label: 'Alle', count: 47 },
     { id: 'cash', label: 'Cash Jobs', count: 24 },
     { id: 'karma', label: 'Karma Jobs', count: 24 },
-    { id: 'listings', label: 'Jobinserate', count: ownJobs.length, hasUnread: unreadApplications.size > 0 },
+    { id: 'listings', label: 'Jobinserate', count: ownJobs.length },
   ];
 
   const jobs = [
@@ -284,11 +283,11 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
                   : isDark
                     ? 'bg-slate-800 text-gray-300 hover:bg-slate-700'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              } ${category.hasUnread ? 'animate-pulse ring-2 ring-orange-500/50' : ''}`}
+              } ${category.id === 'listings' && ownJobs.some(job => job.hasNewApplications) ? 'animate-pulse ring-2 ring-orange-500/50' : ''}`}
             >
               <div className="flex items-center space-x-2">
                 <span>{category.label} ({category.count})</span>
-                {category.hasUnread && (
+                {category.id === 'listings' && ownJobs.some(job => job.hasNewApplications) && (
                   <div className="w-2 h-2 bg-orange-500 rounded-full animate-ping"></div>
                 )}
               </div>
@@ -317,8 +316,123 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
       </div>
 
       {/* Jobs List */}
-      <div className="px-6 grid grid-cols-2 gap-4">
-        {filteredJobs.map((job) => (
+      <div className="px-6">
+        {selectedFilter === 'listings' ? (
+          /* Own Job Listings */
+          <div className="space-y-4">
+            <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Ihre Jobinserate
+            </h3>
+            {ownJobs.map((job) => (
+              <div
+                key={job.id}
+                className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border transition-all duration-300 hover:scale-[1.02] relative overflow-hidden ${
+                  job.hasNewApplications ? 'ring-2 ring-orange-500/30 shadow-orange-500/20' : ''
+                }`}
+              >
+                {job.hasNewApplications && (
+                  <div className="absolute top-4 right-4">
+                    <div className="flex items-center space-x-2 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+                      <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                      <span>Neue Bewerbung!</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 pr-4">
+                    <h3 className={`font-bold text-xl mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {job.title}
+                    </h3>
+                    <p className={`${isDark ? 'text-gray-300' : 'text-gray-700'} mb-4`}>
+                      {job.description}
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                      <div className={`flex items-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <MapPin className="w-4 h-4 mr-2" />
+                        {job.location}
+                      </div>
+                      <div className={`flex items-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <Clock className="w-4 h-4 mr-2" />
+                        {job.estimatedHours}h geschätzt
+                      </div>
+                      <div className="flex items-center text-green-500">
+                        <Euro className="w-4 h-4 mr-2" />
+                        {job.payment} = {job.totalPayment}
+                      </div>
+                      <div className={`flex items-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <Users className="w-4 h-4 mr-2" />
+                        {job.applicationsCount} Bewerbungen
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap gap-2">
+                        {job.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className={`text-xs px-2 py-1 rounded-md ${isDark ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        job.difficulty === 'Einfach' 
+                          ? 'bg-green-500/20 text-green-400'
+                          : job.difficulty === 'Mittel'
+                          ? 'bg-yellow-500/20 text-yellow-400'
+                          : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {job.difficulty}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-700">
+                  <div className="flex items-center space-x-4 text-sm">
+                    <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Erstellt: {job.createdAt}
+                    </span>
+                    <span className="text-red-400">
+                      Läuft ab: {job.expiresAt}
+                    </span>
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => setShowNotifications(true)}
+                      className={`px-4 py-2 rounded-xl border font-medium transition-all duration-300 hover:scale-105 ${
+                        job.hasNewApplications
+                          ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/30'
+                          : isDark
+                            ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600'
+                            : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      {job.hasNewApplications ? 'Neue Bewerbungen!' : 'Bewerbungen ansehen'}
+                    </button>
+                    <button className={`px-4 py-2 rounded-xl border font-medium transition-all duration-300 hover:scale-105 ${
+                      isDark 
+                        ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' 
+                        : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                    }`}>
+                      Bearbeiten
+                    </button>
+                  </div>
+                </div>
+
+                {job.hasNewApplications && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-orange-500/10 to-orange-500/5 -translate-x-full animate-pulse"></div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Regular Jobs Grid */
+          <div className="grid grid-cols-2 gap-4">
+            {filteredJobs.map((job) => (
           <div
             key={job.id}
             onClick={() => handleJobClick(job)}
@@ -415,7 +529,9 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
 
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
           </div>
-        ))}
+            ))}
+          </div>
+        )}
       </div>
     </div>
 
