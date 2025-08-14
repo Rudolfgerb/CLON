@@ -45,6 +45,9 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [showPayments, setShowPayments] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showInviteFriends, setShowInviteFriends] = useState(false);
 
   useEffect(() => {
     const handleNavigateToPayments = () => {
@@ -55,13 +58,19 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
       setCurrentPage('profile');
     };
 
+    const handleInviteNavigation = () => {
+      setShowInviteFriends(true);
+    };
+
     // Listen for navigation events from header
     window.addEventListener('navigateToPayments', handleNavigateToPayments);
     window.addEventListener('navigateToProfile', handleNavigateToProfile);
+    window.addEventListener('navigateToInvite', handleInviteNavigation);
 
     return () => {
       window.removeEventListener('navigateToPayments', handleNavigateToPayments);
       window.removeEventListener('navigateToProfile', handleNavigateToProfile);
+      window.removeEventListener('navigateToInvite', handleInviteNavigation);
     };
   }, []);
 
@@ -97,6 +106,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState('');
+  const [inviteCode, setInviteCode] = useState('CLEAN2024');
 
   const menuItems = [
     { id: 'profile', icon: User, label: 'Profil bearbeiten', description: 'Name, E-Mail, Bio ändern' },
@@ -145,6 +155,10 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
 
   const updatePrivacySetting = (setting: string, value: boolean) => {
     setPrivacySettings(prev => ({ ...prev, [setting]: value }));
+  };
+
+  const handleInviteFriendsBack = () => {
+    setShowInviteFriends(false);
   };
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,6 +217,30 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const removeProfilePicture = () => {
     setProfilePicture(null);
     setPhotoError('');
+  };
+
+  const copyInviteLink = () => {
+    const inviteLink = `${window.location.origin}?ref=${inviteCode}`;
+    navigator.clipboard.writeText(inviteLink);
+    // Show success message
+    const event = new CustomEvent('showToast', { 
+      detail: { message: 'Einladungslink kopiert!', type: 'success' } 
+    });
+    window.dispatchEvent(event);
+  };
+
+  const shareInvite = () => {
+    const shareData = {
+      title: 'CleanWork - Verdiene Geld mit Micro-Jobs!',
+      text: `Schau dir CleanWork an! Mit meinem Code "${inviteCode}" bekommst du 50 Bonus-Karma zum Start!`,
+      url: `${window.location.origin}?ref=${inviteCode}`
+    };
+    
+    if (navigator.share) {
+      navigator.share(shareData);
+    } else {
+      copyInviteLink();
+    }
   };
 
   // Track profile form changes
@@ -266,6 +304,198 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
     setPendingNavigation(null);
   };
 
+  // Show Invite Friends Page
+  if (showInviteFriends) {
+    return (
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="px-6 py-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleInviteFriendsBack}
+                className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
+              >
+                <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+              </button>
+              <div>
+                <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Freunde einladen
+                </h1>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Verdiene Karma für jeden eingeladenen Freund
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 text-blue-500">
+              <User className="w-5 h-5" />
+              <span className="font-semibold">+50 Karma</span>
+            </div>
+          </div>
+
+          {/* Invite Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border text-center`}>
+              <div className="text-2xl font-bold text-blue-500">3</div>
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Eingeladen</div>
+            </div>
+            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border text-center`}>
+              <div className="text-2xl font-bold text-green-500">2</div>
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Beigetreten</div>
+            </div>
+            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border text-center`}>
+              <div className="text-2xl font-bold text-purple-500">100</div>
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Karma verdient</div>
+            </div>
+          </div>
+
+          {/* Invite Code Section */}
+          <div className={`${isDark ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-500/30' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'} rounded-2xl p-6 border mb-6`}>
+            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Dein Einladungscode
+            </h2>
+            
+            <div className="flex items-center space-x-3 mb-4">
+              <div className={`flex-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-xl p-4 border`}>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-500 mb-1">{inviteCode}</div>
+                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Teile diesen Code mit Freunden
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={copyInviteLink}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-xl font-semibold hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-blue-500/30 flex items-center justify-center space-x-2"
+              >
+                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+                <span>Link kopieren</span>
+              </button>
+              
+              <button
+                onClick={shareInvite}
+                className={`border-2 ${isDark ? 'border-blue-500 text-blue-400 hover:bg-blue-500/10' : 'border-blue-500 text-blue-600 hover:bg-blue-50'} py-3 px-4 rounded-xl font-semibold hover:scale-[1.02] transition-all duration-300 flex items-center justify-center space-x-2`}
+              >
+                <User className="w-4 h-4" />
+                <span>Teilen</span>
+              </button>
+            </div>
+          </div>
+
+          {/* How it works */}
+          <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border mb-6`}>
+            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              So funktioniert's
+            </h2>
+            
+            <div className="space-y-4">
+              <div className="flex items-start space-x-4">
+                <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <span className="text-blue-500 font-bold text-sm">1</span>
+                </div>
+                <div>
+                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Code teilen
+                  </h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Teile deinen Einladungscode mit Freunden und Familie
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-4">
+                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <span className="text-green-500 font-bold text-sm">2</span>
+                </div>
+                <div>
+                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Freund registriert sich
+                  </h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Dein Freund verwendet deinen Code bei der Registrierung
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-4">
+                <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <span className="text-purple-500 font-bold text-sm">3</span>
+                </div>
+                <div>
+                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Beide erhalten Bonus
+                  </h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Du und dein Freund erhalten jeweils 50 Karma-Punkte
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Invited Friends List */}
+          <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
+            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Eingeladene Freunde
+            </h2>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Anna Schmidt
+                    </h4>
+                    <p className="text-sm text-green-500">Beigetreten • +50 Karma</p>
+                  </div>
+                </div>
+                <div className="text-green-500 font-bold">✓</div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Tom Weber
+                    </h4>
+                    <p className="text-sm text-green-500">Beigetreten • +50 Karma</p>
+                  </div>
+                </div>
+                <div className="text-green-500 font-bold">✓</div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Lisa Müller
+                    </h4>
+                    <p className="text-sm text-yellow-500">Eingeladen • Wartet auf Registrierung</p>
+                  </div>
+                </div>
+                <div className="text-yellow-500 font-bold">⏳</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const renderMainMenu = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
@@ -320,6 +550,77 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
             </div>
           </button>
         ))}
+      </div>
+
+      {/* Invite Friends Button */}
+      <div className="space-y-4">
+        <button
+          onClick={() => setShowProfile(true)}
+          className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-gray-50'} border ${isDark ? 'border-slate-700' : 'border-gray-200'}`}
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+              <User className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Profil bearbeiten</h3>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Name, E-Mail, Foto ändern</p>
+            </div>
+          </div>
+          <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+        </button>
+
+        <button
+          onClick={() => setShowPayments(true)}
+          className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-gray-50'} border ${isDark ? 'border-slate-700' : 'border-gray-200'}`}
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+              <CreditCard className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Zahlungen</h3>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Auszahlungen & Guthaben</p>
+            </div>
+          </div>
+          <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+        </button>
+
+        <button
+          onClick={() => setShowInviteFriends(true)}
+          className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-gray-50'} border ${isDark ? 'border-slate-700' : 'border-gray-200'} relative overflow-hidden`}
+        >
+          {/* Special highlight for invite feature */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
+          <div className="flex items-center space-x-4 relative z-10">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+              <User className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Freunde einladen</h3>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>50 Karma pro Freund verdienen</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2 relative z-10">
+            <span className="text-blue-500 font-bold text-sm">+50</span>
+            <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+          </div>
+        </button>
+
+        <button
+          className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-gray-50'} border ${isDark ? 'border-slate-700' : 'border-gray-200'}`}
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+              <Bell className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Benachrichtigungen</h3>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Push & E-Mail Einstellungen</p>
+            </div>
+          </div>
+          <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+        </button>
       </div>
     </div>
   );
