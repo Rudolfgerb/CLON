@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { BookOpen, Play, CheckCircle, Clock, Star, Trophy, Target, Zap, Plus, Upload, Code, X, Save, Image } from 'lucide-react';
+import { BookOpen, Play, CheckCircle, Clock, Star, Trophy, Target, Zap, Plus, Upload, Code, X, Save, Image, AlertCircle } from 'lucide-react';
 
 interface CampusPageProps {
   isDark: boolean;
@@ -37,6 +37,7 @@ const CampusPage: React.FC<CampusPageProps> = ({ isDark }) => {
     codeContent: '',
     mediaFiles: []
   });
+  const [showAchievements, setShowAchievements] = useState(false);
 
   const categories = [
     { id: 'all', label: 'Alle Kurse', icon: BookOpen },
@@ -228,11 +229,240 @@ const user: User = {
   ];
 
   const achievements = [
-    { title: 'Erste Schritte', description: 'Ersten Kurs abgeschlossen', icon: Trophy, earned: true },
-    { title: 'Streak Master', description: '7 Tage in Folge gelernt', icon: Zap, earned: true },
-    { title: 'Karma Sammler', description: '1000 Karma Punkte erreicht', icon: Star, earned: false },
+    { title: 'Erste Schritte', description: 'Ersten Kurs abgeschlossen', icon: Trophy, earned: true, rarity: 'common' },
+    { title: 'Streak Master', description: '7 Tage in Folge gelernt', icon: Zap, earned: true, rarity: 'rare' },
+    { title: 'Karma Sammler', description: '1000 Karma Punkte erreicht', icon: Star, earned: false, rarity: 'epic' },
   ];
 
+  // Render Achievements Page
+  if (showAchievements) {
+    return (
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="px-6 py-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowAchievements(false)}
+                className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
+              >
+                <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+              </button>
+              <div>
+                <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Erfolge & Achievements
+                </h1>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Sammle Erfolge und zeige deine Leistungen
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 text-yellow-500">
+              <Trophy className="w-6 h-6" />
+              <span className="font-semibold">12/25</span>
+            </div>
+          </div>
+
+          {/* Progress Overview */}
+          <div className={`${isDark ? 'bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border-yellow-500/30' : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'} rounded-2xl p-6 border mb-6`}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Dein Fortschritt
+                </h3>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  12 von 25 Erfolgen freigeschaltet
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-yellow-500">48%</div>
+                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Abgeschlossen
+                </div>
+              </div>
+            </div>
+            <div className={`w-full h-3 rounded-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+              <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all duration-500" style={{ width: '48%' }}></div>
+            </div>
+          </div>
+
+          {/* Achievement Categories */}
+          <div className="space-y-6">
+            {/* Work Achievements */}
+            <div>
+              <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                🚀 Arbeits-Erfolge
+              </h2>
+              <div className="grid grid-cols-1 gap-4">
+                {[
+                  { 
+                    title: 'Topspeed ⚡', 
+                    description: 'Auftrag angenommen, der weniger als 30min inseriert war', 
+                    icon: Zap, 
+                    earned: true, 
+                    rarity: 'rare',
+                    earnedDate: 'Vor 2 Tagen'
+                  },
+                  { 
+                    title: 'Fleißiges Bienchen 🐝', 
+                    description: 'Länger als 3 Stunden an einem Tag in der App verbracht', 
+                    icon: Clock, 
+                    earned: true, 
+                    rarity: 'common',
+                    earnedDate: 'Gestern'
+                  },
+                  { 
+                    title: 'Faulpelz 😴', 
+                    description: 'Job-Termin nicht eingehalten', 
+                    icon: AlertCircle, 
+                    earned: false, 
+                    rarity: 'shame',
+                    earnedDate: null
+                  },
+                  { 
+                    title: 'Perfektionist ✨', 
+                    description: '10 Jobs mit 5-Sterne Bewertung abgeschlossen', 
+                    icon: Star, 
+                    earned: false, 
+                    rarity: 'epic',
+                    earnedDate: null
+                  }
+                ].map((achievement, index) => (
+                  <div
+                    key={index}
+                    className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border transition-all duration-300 hover:scale-[1.02] ${
+                      achievement.earned ? 'ring-2 ring-yellow-500/30 shadow-lg shadow-yellow-500/20' : 'opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-4">
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                        achievement.earned 
+                          ? achievement.rarity === 'epic' ? 'bg-gradient-to-br from-purple-500 to-pink-500'
+                            : achievement.rarity === 'rare' ? 'bg-gradient-to-br from-blue-500 to-cyan-500'
+                            : achievement.rarity === 'shame' ? 'bg-gradient-to-br from-red-500 to-orange-500'
+                            : 'bg-gradient-to-br from-yellow-500 to-orange-500'
+                          : isDark ? 'bg-slate-700' : 'bg-gray-200'
+                      }`}>
+                        <achievement.icon className={`w-8 h-8 ${achievement.earned ? 'text-white' : isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {achievement.title}
+                          </h3>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            achievement.rarity === 'epic' ? 'bg-purple-500/20 text-purple-400'
+                            : achievement.rarity === 'rare' ? 'bg-blue-500/20 text-blue-400'
+                            : achievement.rarity === 'shame' ? 'bg-red-500/20 text-red-400'
+                            : 'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {achievement.rarity === 'epic' ? 'EPISCH' 
+                             : achievement.rarity === 'rare' ? 'SELTEN'
+                             : achievement.rarity === 'shame' ? 'SCHANDE'
+                             : 'HÄUFIG'}
+                          </span>
+                        </div>
+                        <p className={`${isDark ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                          {achievement.description}
+                        </p>
+                        {achievement.earned && achievement.earnedDate && (
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Erhalten: {achievement.earnedDate}
+                          </p>
+                        )}
+                        {!achievement.earned && (
+                          <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                            Noch nicht freigeschaltet
+                          </p>
+                        )}
+                      </div>
+                      {achievement.earned && (
+                        <CheckCircle className="w-6 h-6 text-green-500" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Learning Achievements */}
+            <div>
+              <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                📚 Lern-Erfolge
+              </h2>
+              <div className="grid grid-cols-1 gap-4">
+                {[
+                  { 
+                    title: 'Wissensdurst 🧠', 
+                    description: '5 Campus-Kurse in einer Woche abgeschlossen', 
+                    icon: BookOpen, 
+                    earned: true, 
+                    rarity: 'rare',
+                    earnedDate: 'Vor 1 Woche'
+                  },
+                  { 
+                    title: 'Code-Ninja 🥷', 
+                    description: '50 Code-Beispiele erfolgreich ausgeführt', 
+                    icon: Code, 
+                    earned: false, 
+                    rarity: 'epic',
+                    earnedDate: null
+                  }
+                ].map((achievement, index) => (
+                  <div
+                    key={index}
+                    className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border transition-all duration-300 hover:scale-[1.02] ${
+                      achievement.earned ? 'ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/20' : 'opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-4">
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                        achievement.earned 
+                          ? achievement.rarity === 'epic' ? 'bg-gradient-to-br from-purple-500 to-pink-500'
+                            : 'bg-gradient-to-br from-blue-500 to-cyan-500'
+                          : isDark ? 'bg-slate-700' : 'bg-gray-200'
+                      }`}>
+                        <achievement.icon className={`w-8 h-8 ${achievement.earned ? 'text-white' : isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {achievement.title}
+                          </h3>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            achievement.rarity === 'epic' ? 'bg-purple-500/20 text-purple-400'
+                            : 'bg-blue-500/20 text-blue-400'
+                          }`}>
+                            {achievement.rarity === 'epic' ? 'EPISCH' : 'SELTEN'}
+                          </span>
+                        </div>
+                        <p className={`${isDark ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                          {achievement.description}
+                        </p>
+                        {achievement.earned && achievement.earnedDate && (
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Erhalten: {achievement.earnedDate}
+                          </p>
+                        )}
+                        {!achievement.earned && (
+                          <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                            Noch nicht freigeschaltet
+                          </p>
+                        )}
+                      </div>
+                      {achievement.earned && (
+                        <CheckCircle className="w-6 h-6 text-green-500" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const filteredCourses = courses.filter(course => 
     selectedCategory === 'all' || course.category === selectedCategory
   );
@@ -837,14 +1067,22 @@ const user: User = {
 
       {/* Achievements Section */}
       <div className="px-6 mb-6">
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Erfolge
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Erfolge
+          </h2>
+          <button
+            onClick={() => setShowAchievements(true)}
+            className="text-blue-500 hover:text-blue-400 text-sm font-medium transition-colors"
+          >
+            Alle anzeigen
+          </button>
+        </div>
         <div className="flex space-x-4 overflow-x-auto">
           {achievements.map((achievement, index) => (
             <div
               key={index}
-              className={`flex-shrink-0 w-48 p-4 rounded-2xl border transition-all duration-300 hover:scale-105 ${
+              className={`flex-shrink-0 w-48 p-4 rounded-2xl border transition-all duration-300 hover:scale-105 cursor-pointer ${
                 achievement.earned
                   ? isDark
                     ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-500/30'
@@ -863,8 +1101,31 @@ const user: User = {
               <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 {achievement.description}
               </p>
+              {achievement.earned && (
+                <div className="mt-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
+                </div>
+              )}
             </div>
           ))}
+          
+          {/* New Achievement */}
+          <div className={`flex-shrink-0 w-48 p-4 rounded-2xl border transition-all duration-300 hover:scale-105 cursor-pointer ${
+            isDark
+              ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-blue-500/30 animate-pulse'
+              : 'bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 animate-pulse'
+          }`}>
+            <Zap className="w-8 h-8 mb-3 text-blue-500" />
+            <h3 className={`font-semibold text-sm mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Topspeed ⚡
+            </h3>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Auftrag in unter 30min angenommen
+            </p>
+            <div className="mt-2">
+              <div className="w-4 h-4 bg-blue-500 rounded-full mx-auto animate-ping"></div>
+            </div>
+          </div>
         </div>
       </div>
 
