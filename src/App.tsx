@@ -350,7 +350,20 @@ function App() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <span className={`font-bold text-lg ${isDark ? 'text-green-400' : 'text-green-600'} transition-colors duration-500`}>€247</span>
+            <button
+              onClick={() => {
+                setActiveTab('more');
+                // Small delay to ensure tab is active before navigating to payments
+                setTimeout(() => {
+                  // This will be handled by MoreMenu component
+                  const event = new CustomEvent('navigateToPayments');
+                  window.dispatchEvent(event);
+                }, 100);
+              }}
+              className={`font-bold text-lg ${isDark ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-500'} transition-all duration-300 hover:scale-110 cursor-pointer`}
+            >
+              €247
+            </button>
             <button
               onClick={() => setShowNotifications(true)}
               className="relative p-2 rounded-full hover:bg-slate-700/50 transition-colors"

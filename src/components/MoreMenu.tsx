@@ -39,6 +39,20 @@ type PageType = 'main' | 'profile' | 'payments' | 'notifications' | 'help' | 'pr
 
 const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [currentPage, setCurrentPage] = useState<PageType>('main');
+
+  useEffect(() => {
+    const handleNavigateToPayments = () => {
+      setCurrentPage('payments');
+    };
+
+    // Listen for navigation events from header
+    window.addEventListener('navigateToPayments', handleNavigateToPayments);
+
+    return () => {
+      window.removeEventListener('navigateToPayments', handleNavigateToPayments);
+    };
+  }, []);
+
   const [profileData, setProfileData] = useState({
     name: 'Max Mustermann',
     email: 'max@example.com',
