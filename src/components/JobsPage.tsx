@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, Clock, Euro, Star, Briefcase, Users, TrendingUp, X, Send, User, Mail, FileText, AlertCircle } from 'lucide-react';
 
 interface JobsPageProps {
@@ -22,6 +22,21 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications }) => {
   const [applicationLoading, setApplicationLoading] = useState(false);
   const [applicationError, setApplicationError] = useState('');
   const [applicationSuccess, setApplicationSuccess] = useState('');
+
+  useEffect(() => {
+    const handleJobFilter = (event: CustomEvent) => {
+      const filter = event.detail;
+      console.log('Received job filter event:', filter); // Debug log
+      setSelectedFilter(filter);
+    };
+
+    // Listen for job filter events from dashboard
+    window.addEventListener('setJobFilter', handleJobFilter as EventListener);
+
+    return () => {
+      window.removeEventListener('setJobFilter', handleJobFilter as EventListener);
+    };
+  }, []);
 
   // Mock data for own created jobs
   const ownJobs = [
