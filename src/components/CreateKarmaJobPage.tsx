@@ -14,7 +14,8 @@ import {
   Plus,
   Minus,
   Users,
-  Target
+  Target,
+  Euro
 } from 'lucide-react';
 
 interface CreateKarmaJobPageProps {
@@ -26,6 +27,8 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showRewardSystem, setShowRewardSystem] = useState(false);
+  const [userKarma, setUserKarma] = useState(1247); // Mock user karma - should come from user profile
 
   // Form state
   const [jobData, setJobData] = useState({
@@ -42,6 +45,15 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
     requirements: '',
     deliverables: '',
     helpType: 'learning' // learning, mentoring, community, review
+  });
+
+  // Reward system state
+  const [rewardData, setRewardData] = useState({
+    rewardType: 'karma', // 'karma' or 'money'
+    karmaAmount: 50,
+    moneyAmount: 25,
+    maxWinners: 1,
+    description: ''
   });
 
   const categories = [
@@ -186,6 +198,289 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
     }
   };
 
+  if (showRewardSystem) {
+    return (
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="px-6 py-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowRewardSystem(false)}
+                className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
+              >
+                <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+              </button>
+              <div>
+                <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Karma Job belohnen
+                </h1>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Setze dein eigenes Karma oder Geld als Belohnung ein
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 text-purple-500">
+              <Star className="w-5 h-5" />
+              <span className="font-semibold">{userKarma.toLocaleString()} verfügbar</span>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Reward Type Selection */}
+            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
+              <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Belohnungsart wählen
+              </h2>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* Karma Reward */}
+                <button
+                  type="button"
+                  onClick={() => setRewardData({...rewardData, rewardType: 'karma'})}
+                  className={`p-6 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                    rewardData.rewardType === 'karma'
+                      ? 'border-purple-500 bg-purple-500/20'
+                      : isDark
+                        ? 'border-slate-600 hover:border-slate-500'
+                        : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Star className="w-8 h-8 text-purple-500" />
+                    </div>
+                    <h3 className={`font-bold text-lg mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Karma Belohnung
+                    </h3>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-3`}>
+                      Setze dein eigenes Karma als Belohnung ein
+                    </p>
+                    <div className="text-purple-500 font-semibold">
+                      Verfügbar: {userKarma.toLocaleString()}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Money Reward */}
+                <button
+                  type="button"
+                  onClick={() => setRewardData({...rewardData, rewardType: 'money'})}
+                  className={`p-6 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                    rewardData.rewardType === 'money'
+                      ? 'border-green-500 bg-green-500/20'
+                      : isDark
+                        ? 'border-slate-600 hover:border-slate-500'
+                        : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Euro className="w-8 h-8 text-green-500" />
+                    </div>
+                    <h3 className={`font-bold text-lg mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Geld Belohnung
+                    </h3>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-3`}>
+                      Setze echtes Geld als Belohnung ein
+                    </p>
+                    <div className="text-green-500 font-semibold">
+                      Aus deinem Guthaben
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Reward Configuration */}
+            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
+              <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Belohnung konfigurieren
+              </h2>
+              
+              <div className="space-y-4">
+                {/* Amount Input */}
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {rewardData.rewardType === 'karma' ? 'Karma Menge' : 'Geld Betrag (€)'}
+                  </label>
+                  <div className="relative">
+                    {rewardData.rewardType === 'karma' ? (
+                      <Star className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                    ) : (
+                      <Euro className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                    )}
+                    <input
+                      type="number"
+                      min="1"
+                      max={rewardData.rewardType === 'karma' ? userKarma : 1000}
+                      value={rewardData.rewardType === 'karma' ? rewardData.karmaAmount : rewardData.moneyAmount}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 1;
+                        if (rewardData.rewardType === 'karma') {
+                          setRewardData({...rewardData, karmaAmount: Math.min(value, userKarma)});
+                        } else {
+                          setRewardData({...rewardData, moneyAmount: value});
+                        }
+                      }}
+                      className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
+                        isDark 
+                          ? 'bg-slate-700 border-slate-600 text-white' 
+                          : 'bg-gray-50 border-gray-200 text-gray-900'
+                      } focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500`}
+                    />
+                  </div>
+                  {rewardData.rewardType === 'karma' && (
+                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Maximal {userKarma.toLocaleString()} Karma verfügbar
+                    </p>
+                  )}
+                </div>
+
+                {/* Max Winners */}
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Anzahl Gewinner
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setRewardData({...rewardData, maxWinners: Math.max(1, rewardData.maxWinners - 1)})}
+                      className={`p-2 rounded-lg ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={rewardData.maxWinners}
+                      onChange={(e) => setRewardData({...rewardData, maxWinners: Math.max(1, Math.min(10, parseInt(e.target.value) || 1))})}
+                      className={`flex-1 px-4 py-3 rounded-xl border transition-colors text-center ${
+                        isDark 
+                          ? 'bg-slate-700 border-slate-600 text-white' 
+                          : 'bg-gray-50 border-gray-200 text-gray-900'
+                      } focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setRewardData({...rewardData, maxWinners: Math.min(10, rewardData.maxWinners + 1)})}
+                      className={`p-2 rounded-lg ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Wie viele Personen sollen die Belohnung erhalten?
+                  </p>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Belohnungsbeschreibung
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={rewardData.description}
+                    onChange={(e) => setRewardData({...rewardData, description: e.target.value})}
+                    placeholder="Beschreibe, wofür die Belohnung vergeben wird..."
+                    className={`w-full px-4 py-3 rounded-xl border transition-colors resize-none ${
+                      isDark 
+                        ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                    } focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className={`${isDark ? 'bg-gradient-to-r from-purple-900/20 to-blue-900/20 border-purple-500/30' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200'} rounded-2xl p-6 border`}>
+              <h3 className={`font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Belohnungs-Zusammenfassung
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Belohnungsart:</span>
+                  <span className={`font-medium ${rewardData.rewardType === 'karma' ? 'text-purple-400' : 'text-green-400'}`}>
+                    {rewardData.rewardType === 'karma' ? 'Karma' : 'Geld'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Betrag pro Gewinner:</span>
+                  <span className={`font-bold text-lg ${rewardData.rewardType === 'karma' ? 'text-purple-400' : 'text-green-400'}`}>
+                    {rewardData.rewardType === 'karma' ? `${rewardData.karmaAmount} Karma` : `€${rewardData.moneyAmount}`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Anzahl Gewinner:</span>
+                  <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {rewardData.maxWinners}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-current/20">
+                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Gesamtkosten:</span>
+                  <span className={`font-bold text-xl ${rewardData.rewardType === 'karma' ? 'text-purple-400' : 'text-green-400'}`}>
+                    {rewardData.rewardType === 'karma' 
+                      ? `${rewardData.karmaAmount * rewardData.maxWinners} Karma`
+                      : `€${rewardData.moneyAmount * rewardData.maxWinners}`
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-4">
+              <button
+                type="button"
+                onClick={() => setShowRewardSystem(false)}
+                className={`flex-1 px-6 py-4 rounded-xl border font-semibold transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' 
+                    : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Zurück
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // Here you would create the reward job
+                  console.log('Creating reward job:', rewardData);
+                  setSuccess('Belohnungs-Job erfolgreich erstellt!');
+                  setTimeout(() => {
+                    onBack();
+                  }, 2000);
+                }}
+                disabled={loading}
+                className={`flex-1 bg-gradient-to-r ${
+                  rewardData.rewardType === 'karma' 
+                    ? 'from-purple-500 to-purple-600 shadow-purple-500/30' 
+                    : 'from-green-500 to-green-600 shadow-green-500/30'
+                } text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2`}
+              >
+                <Save className="w-5 h-5" />
+                <span>Belohnung erstellen</span>
+              </button>
+            </div>
+
+            {/* Success Message */}
+            {success && (
+              <div className="bg-green-500/20 border border-green-500/30 rounded-xl p-4 flex items-center space-x-3">
+                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+                <p className="text-green-200 text-sm">{success}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto pb-32">
       <div className="px-6 py-6">
@@ -211,6 +506,17 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
             <Star className="w-5 h-5" />
             <span className="font-semibold">+{calculateKarmaReward()} Karma</span>
           </div>
+        </div>
+
+        {/* Karma Job Reward Button */}
+        <div className="px-6 mb-6">
+          <button
+            onClick={() => setShowRewardSystem(true)}
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-orange-500/30 flex items-center justify-center space-x-2"
+          >
+            <Target className="w-5 h-5" />
+            <span>Karma Job belohnen</span>
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
