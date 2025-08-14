@@ -6,6 +6,7 @@ import JobsPage from './components/JobsPage';
 import CampusPage from './components/CampusPage';
 import MoreMenu from './components/MoreMenu';
 import AuthPage from './components/AuthPage';
+import CreateCashJobPage from './components/CreateCashJobPage';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -13,6 +14,7 @@ function App() {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showCreateCashJob, setShowCreateCashJob] = useState(false);
 
   useEffect(() => {
     // Check current session
@@ -113,6 +115,9 @@ function App() {
       case 'more':
         return <MoreMenu isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />;
       case 'add':
+        if (showCreateCashJob) {
+          return <CreateCashJobPage isDark={isDark} onBack={() => setShowCreateCashJob(false)} />;
+        }
         return (
           <div className="flex-1 overflow-y-auto pb-32">
             <div className="px-6 py-6">
@@ -125,7 +130,10 @@ function App() {
 
               <div className="space-y-6">
                 {/* Cash Job Option */}
-                <button className="group w-full relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-3xl p-8 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/30">
+                <button 
+                  onClick={() => setShowCreateCashJob(true)}
+                  className="group w-full relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-3xl p-8 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/30"
+                >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-4">
