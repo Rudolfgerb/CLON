@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import { 
   User, 
   CreditCard, 
@@ -27,7 +28,9 @@ import {
   AlertCircle,
   Phone,
   Globe,
-  Lock
+  Lock,
+  Upload,
+  Image
 } from 'lucide-react';
 
 interface MoreMenuProps {
@@ -88,6 +91,9 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
     showActivity: false,
     dataCollection: true
   });
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState('');
 
   const menuItems = [
     { id: 'profile', icon: User, label: 'Profil bearbeiten', description: 'Name, E-Mail, Bio ändern' },
@@ -138,6 +144,63 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
     setPrivacySettings(prev => ({ ...prev, [setting]: value }));
   };
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Bitte wählen Sie eine Bilddatei aus');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError('Datei ist zu groß. Maximum 5MB erlaubt');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setPhotoError('');
+
+    try {
+      // Create a unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `profile-${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${fileName}`;
+
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      if (urlData?.publicUrl) {
+        setProfilePicture(urlData.publicUrl);
+        // Here you would typically update the user's profile in the database
+        console.log('Profile picture uploaded:', urlData.publicUrl);
+      }
+
+    } catch (error: any) {
+      console.error('Error uploading photo:', error);
+      setPhotoError(error.message || 'Fehler beim Hochladen des Fotos');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const removeProfilePicture = () => {
+    setProfilePicture(null);
+    setPhotoError('');
+  };
   const renderMainMenu = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
@@ -216,17 +279,68 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
           Profilbild
         </h2>
         <div className="flex items-center space-x-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
-            <User className="w-10 h-10 text-white" />
+          <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center overflow-hidden">
+            {profilePicture ? (
+              <img 
+                src={profilePicture} 
+                alt="Profilbild" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-10 h-10 text-white" />
+            )}
+            {uploadingPhoto && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
           </div>
           <div className="flex-1">
-            <button className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
-              <Camera className="w-4 h-4" />
-              <span>Foto ändern</span>
-            </button>
+            <div className="flex items-center space-x-2 mb-2">
+              <label className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                  disabled={uploadingPhoto}
+                />
+                {uploadingPhoto ? (
+                  <Upload className="w-4 h-4 animate-pulse" />
+                ) : (
+                  <Camera className="w-4 h-4" />
+                )}
+                <span>{uploadingPhoto ? 'Lädt hoch...' : 'Foto ändern'}</span>
+              </label>
+              {profilePicture && (
+                <button
+                  onClick={removeProfilePicture}
+                  className="p-2 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors"
+                  title="Foto entfernen"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
             <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               JPG, PNG oder GIF. Max. 5MB.
             </p>
+            {photoError && (
+              <div className="mt-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg">
+                <p className="text-red-400 text-sm flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{photoError}</span>
+                </p>
+              </div>
+            )}
+            {profilePicture && !photoError && (
+              <div className="mt-2 p-2 bg-green-500/20 border border-green-500/30 rounded-lg">
+                <p className="text-green-400 text-sm flex items-center space-x-2">
+                  <Check className="w-4 h-4 flex-shrink-0" />
+                  <span>Foto erfolgreich hochgeladen!</span>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
