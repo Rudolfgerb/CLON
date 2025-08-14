@@ -172,7 +172,7 @@ function App() {
       
       // Create notification for new jobs if there are any
       if (newJobs && newJobs.length > 0 && !notificationStates.newJobs) {
-        await supabase
+        const { error: notificationError } = await supabase
           .from('notifications')
           .insert({
             user_id: userId,
@@ -181,6 +181,10 @@ function App() {
             message: 'Entdecke neue Verdienstmöglichkeiten',
             data: { job_count: newJobs.length }
           });
+        
+        if (!notificationError) {
+          setNotificationStates(prev => ({ ...prev, newJobs: true }));
+        }
       }
       
       // Load user's active jobs
@@ -219,24 +223,24 @@ function App() {
 
   const checkProfileCompleteness = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
-        .select('full_name, email')
+        .select('full_name,email')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       
       // Check if profile needs updates (missing name or default values)
-      const needsUpdate = !data?.full_name || 
-                         data.full_name === 'CleanWork' || 
-                         data.full_name.trim() === '';
+      const needsUpdate = !profile?.full_name || 
+                         profile.full_name === 'CleanWork' || 
+                         profile.full_name.trim() === '';
       
       setProfileNeedsUpdate(needsUpdate);
       
       // Create notification if profile is incomplete
       if (needsUpdate && !notificationStates.profileIncomplete) {
-        await supabase
+        const { error: notificationError } = await supabase
           .from('notifications')
           .insert({
             user_id: userId,
@@ -245,6 +249,10 @@ function App() {
             message: 'Vervollständige dein Profil für bessere Job-Chancen',
             data: { action: 'complete_profile' }
           });
+        
+        if (!notificationError) {
+          setNotificationStates(prev => ({ ...prev, profileIncomplete: true }));
+        }
       }
     } catch (error) {
       console.error('Error checking profile:', error);
@@ -258,10 +266,10 @@ function App() {
       // Check for achievements based on real data
       checkForAchievements();
       
-      // Set up periodic data refresh (every 30 seconds)
+      // Set up periodic data refresh (every 60 seconds to avoid rate limits)
       const refreshTimer = setInterval(() => {
         loadUserData(user.id);
-      }, 30000);
+      }, 60000);
 
       return () => clearInterval(refreshTimer);
     }
@@ -272,7 +280,8 @@ function App() {
     if (dailyStreak > 0 && dailyStreak % 7 === 0) {
       // Create notification for streak achievement
       if (user && !notificationStates.achievements) {
-        supabase
+        const insertNotification = async () => {
+          const { error } = await supabase
           .from('notifications')
           .insert({
             user_id: user.id,
@@ -281,6 +290,12 @@ function App() {
             message: `${dailyStreak} Tage in Folge aktiv!`,
             data: { achievement_type: 'streak', streak_days: dailyStreak }
           });
+          
+          if (!error) {
+            setNotificationStates(prev => ({ ...prev, achievements: true }));
+          }
+        };
+        insertNotification();
       }
       
       addGameNotification({
@@ -295,7 +310,8 @@ function App() {
     if (todayKarmaEarned >= 100) {
       // Create notification for karma milestone
       if (user && !notificationStates.karmaEarned) {
-        supabase
+        const insertNotification = async () => {
+          const { error } = await supabase
           .from('notifications')
           .insert({
             user_id: user.id,
@@ -304,6 +320,12 @@ function App() {
             message: `+${todayKarmaEarned} Karma heute verdient!`,
             data: { karma_earned: todayKarmaEarned }
           });
+          
+          if (!error) {
+            setNotificationStates(prev => ({ ...prev, karmaEarned: true }));
+          }
+        };
+        insertNotification();
       }
       
       addGameNotification({
@@ -318,7 +340,8 @@ function App() {
     if (completedJobsToday >= 3) {
       // Create notification for productivity achievement
       if (user && !notificationStates.achievements) {
-        supabase
+        const insertNotification = async () => {
+          const { error } = await supabase
           .from('notifications')
           .insert({
             user_id: user.id,
@@ -327,6 +350,12 @@ function App() {
             message: `${completedJobsToday} Jobs heute abgeschlossen!`,
             data: { achievement_type: 'productivity', jobs_completed: completedJobsToday }
           });
+          
+          if (!error) {
+            setNotificationStates(prev => ({ ...prev, achievements: true }));
+          }
+        };
+        insertNotification();
       }
       
       addGameNotification({
