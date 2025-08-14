@@ -39,6 +39,7 @@ interface Application {
   experience: string;
   portfolio: string;
   status: 'pending' | 'accepted' | 'rejected';
+  read: boolean;
   created_at: string;
 }
 
@@ -48,6 +49,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ isDark, onBack })
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [readApplications, setReadApplications] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadNotifications();
@@ -92,6 +94,14 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ isDark, onBack })
     } finally {
       setLoading(false);
     }
+  };
+
+  const markApplicationAsRead = (applicationId: string) => {
+    setReadApplications(prev => new Set([...prev, applicationId]));
+  };
+
+  const isApplicationUnread = (applicationId: string) => {
+    return !readApplications.has(applicationId);
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -243,11 +253,22 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ isDark, onBack })
             <div className="space-y-4">
               {applications.map((application) => {
                 const StatusIcon = getStatusIcon(application.status);
+                const isUnread = isApplicationUnread(application.id);
                 return (
                   <div
                     key={application.id}
-                    className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border transition-all duration-300 hover:scale-[1.02]`}
+                    onClick={() => markApplicationAsRead(application.id)}
+                    className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border transition-all duration-300 hover:scale-[1.02] cursor-pointer ${
+                      isUnread ? 'ring-2 ring-orange-500/50 shadow-lg shadow-orange-500/20 animate-pulse' : ''
+                    }`}
                   >
+                    {isUnread && (
+                      <div className="absolute top-3 right-3">
+                        <div className="w-3 h-3 bg-orange-500 rounded-full animate-ping"></div>
+                        <div className="absolute top-0 right-0 w-3 h-3 bg-orange-500 rounded-full"></div>
+                      </div>
+                    )}
+
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start space-x-4">
                         <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center`}>
@@ -255,7 +276,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ isDark, onBack })
                         </div>
                         <div className="flex-1">
                           <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                            Neue Bewerbung
+                            {isUnread ? '🔥 Neue Bewerbung' : 'Bewerbung'}
                           </h3>
                           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
                             Job: React Login-Komponente erstellen

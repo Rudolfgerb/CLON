@@ -10,6 +10,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [unreadApplications, setUnreadApplications] = useState<Set<string>>(new Set(['1'])); // Mock: Job 1 has unread applications
   const [applicationData, setApplicationData] = useState({
     message: '',
     hourlyRate: '',
@@ -36,7 +37,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
       tags: ['React', 'TypeScript', 'CSS'],
       status: 'active',
       applicationsCount: 3,
-      hasNewApplications: true,
+      hasNewApplications: unreadApplications.has('1'),
       expiresAt: 'Heute 18:00',
       createdAt: 'Vor 2 Stunden'
     },
@@ -53,7 +54,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
       tags: ['Vue.js', 'Tailwind', 'JavaScript'],
       status: 'active',
       applicationsCount: 1,
-      hasNewApplications: false,
+      hasNewApplications: unreadApplications.has('2'),
       expiresAt: 'Morgen 14:00',
       createdAt: 'Gestern'
     }
@@ -62,7 +63,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
     { id: 'all', label: 'Alle', count: 47 },
     { id: 'cash', label: 'Cash Jobs', count: 24 },
     { id: 'karma', label: 'Karma Jobs', count: 24 },
-    { id: 'listings', label: 'Jobinserate', count: ownJobs.length },
+    { id: 'listings', label: 'Jobinserate', count: ownJobs.length, hasUnread: unreadApplications.size > 0 },
   ];
 
   const jobs = [
@@ -283,11 +284,11 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark }) => {
                   : isDark
                     ? 'bg-slate-800 text-gray-300 hover:bg-slate-700'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              } ${category.id === 'listings' && ownJobs.some(job => job.hasNewApplications) ? 'animate-pulse ring-2 ring-orange-500/50' : ''}`}
+              } ${category.hasUnread ? 'animate-pulse ring-2 ring-orange-500/50' : ''}`}
             >
               <div className="flex items-center space-x-2">
                 <span>{category.label} ({category.count})</span>
-                {category.id === 'listings' && ownJobs.some(job => job.hasNewApplications) && (
+                {category.hasUnread && (
                   <div className="w-2 h-2 bg-orange-500 rounded-full animate-ping"></div>
                 )}
               </div>
