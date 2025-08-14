@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { supabase } from './lib/supabase';
-import { Home, Briefcase, Plus, GraduationCap, MoreHorizontal, User, Bell, Euro, Code, BookOpen, Star, ArrowRight, Moon, Sun } from 'lucide-react';
+import { Home, Briefcase, Plus, GraduationCap, MoreHorizontal, User, Bell, Euro, Code, BookOpen, Star, ArrowRight, Moon, Sun, ArrowLeft, Users, TrendingUp, Clock } from 'lucide-react';
 import JobsPage from './components/JobsPage';
 import CampusPage from './components/CampusPage';
 import MoreMenu from './components/MoreMenu';
@@ -19,6 +19,7 @@ function App() {
   const [showCreateCashJob, setShowCreateCashJob] = useState(false);
   const [showCreateKarmaJob, setShowCreateKarmaJob] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showActivities, setShowActivities] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(3); // Mock data
 
   useEffect(() => {
@@ -86,20 +87,82 @@ function App() {
 
   const activities = [
     {
+      id: 1,
       title: 'React Projekt',
       subtitle: '€120 • Abgeschlossen',
       time: 'Heute',
       karma: '+50 Karma',
       icon: Code,
       color: 'bg-blue-500',
+      type: 'job_completed',
+      details: 'Login-Komponente mit TypeScript erstellt',
+      client: 'StartupXYZ',
+      duration: '4 Stunden'
     },
     {
+      id: 2,
       title: 'JavaScript Tutorial',
       subtitle: 'Campus Lektion',
       time: 'Gestern',
       karma: '+25 Karma',
       icon: BookOpen,
       color: 'bg-purple-500',
+      type: 'course_completed',
+      details: 'ES6 Features und Arrow Functions',
+      progress: '100%',
+      duration: '2 Stunden'
+    },
+    {
+      id: 3,
+      title: 'Vue.js Dashboard',
+      subtitle: '€85 • In Bearbeitung',
+      time: 'Vor 2 Tagen',
+      karma: '+0 Karma',
+      icon: Code,
+      color: 'bg-orange-500',
+      type: 'job_active',
+      details: 'Admin-Panel mit Tailwind CSS',
+      client: 'TechCorp',
+      duration: '6 Stunden'
+    },
+    {
+      id: 4,
+      title: 'Code Review Session',
+      subtitle: 'Karma Job • Abgeschlossen',
+      time: 'Vor 3 Tagen',
+      karma: '+75 Karma',
+      icon: Star,
+      color: 'bg-green-500',
+      type: 'karma_completed',
+      details: 'React Hooks Best Practices Review',
+      community: 'Frontend Developers',
+      duration: '1.5 Stunden'
+    },
+    {
+      id: 5,
+      title: 'Python Backend API',
+      subtitle: '€200 • Abgelehnt',
+      time: 'Vor 4 Tagen',
+      karma: '+0 Karma',
+      icon: Code,
+      color: 'bg-red-500',
+      type: 'job_rejected',
+      details: 'FastAPI mit PostgreSQL Integration',
+      client: 'DataCorp',
+      reason: 'Andere Bewerbung ausgewählt'
+    },
+    {
+      id: 6,
+      title: 'CSS Grid Masterclass',
+      subtitle: 'Campus Kurs',
+      time: 'Vor 5 Tagen',
+      karma: '+30 Karma',
+      icon: BookOpen,
+      color: 'bg-indigo-500',
+      type: 'course_completed',
+      details: 'Moderne Layout-Techniken',
+      progress: '100%',
+      duration: '3 Stunden'
     },
   ];
 
@@ -119,6 +182,187 @@ function App() {
         return <CampusPage isDark={isDark} />;
       case 'more':
         return <MoreMenu isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />;
+      case 'activities':
+        if (showActivities) {
+          return (
+            <div className="flex-1 overflow-y-auto pb-32">
+              <div className="px-6 py-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={() => {
+                        setShowActivities(false);
+                        setActiveTab('home');
+                      }}
+                      className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
+                    >
+                      <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+                    </button>
+                    <div>
+                      <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Aktivitäten
+                      </h1>
+                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Deine letzten Jobs und Kurse
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats Overview */}
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                  <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border hover:scale-105 transition-transform duration-300`}>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-500">3</div>
+                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Abgeschlossen</div>
+                    </div>
+                  </div>
+                  <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border hover:scale-105 transition-transform duration-300`}>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-500">1</div>
+                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Aktiv</div>
+                    </div>
+                  </div>
+                  <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border hover:scale-105 transition-transform duration-300`}>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-500">180</div>
+                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Karma</div>
+                    </div>
+                  </div>
+                  <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border hover:scale-105 transition-transform duration-300`}>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-500">€405</div>
+                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Verdienst</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex space-x-2 mb-6">
+                  {[
+                    { id: 'all', label: 'Alle', count: activities.length },
+                    { id: 'jobs', label: 'Jobs', count: activities.filter(a => a.type.includes('job')).length },
+                    { id: 'courses', label: 'Kurse', count: activities.filter(a => a.type.includes('course')).length },
+                    { id: 'karma', label: 'Karma', count: activities.filter(a => a.type.includes('karma')).length }
+                  ].map((filter) => (
+                    <button
+                      key={filter.id}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 ${
+                        filter.id === 'all'
+                          ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                          : isDark
+                            ? 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {filter.label} ({filter.count})
+                    </button>
+                  ))}
+                </div>
+
+                {/* Activities List */}
+                <div className="space-y-4">
+                  {activities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-6 border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group cursor-pointer`}
+                    >
+                      <div className="flex items-start space-x-4">
+                        <div className={`w-14 h-14 ${activity.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 relative`}>
+                          <activity.icon className="w-7 h-7 text-white" />
+                          {activity.type === 'job_active' && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full animate-pulse"></div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>
+                                {activity.title}
+                              </h4>
+                              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500 mb-1`}>
+                                {activity.details}
+                              </p>
+                              <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'} transition-colors duration-500`}>
+                                {activity.subtitle}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`}>
+                                {activity.time}
+                              </p>
+                              <p className={`text-sm font-medium ${
+                                activity.karma.includes('+') ? 'text-green-400' : 'text-gray-500'
+                              }`}>
+                                {activity.karma}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Additional Details */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4 text-sm">
+                              {activity.client && (
+                                <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  <User className="w-4 h-4" />
+                                  <span>{activity.client}</span>
+                                </div>
+                              )}
+                              {activity.community && (
+                                <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  <Users className="w-4 h-4" />
+                                  <span>{activity.community}</span>
+                                </div>
+                              )}
+                              {activity.progress && (
+                                <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  <TrendingUp className="w-4 h-4" />
+                                  <span>{activity.progress}</span>
+                                </div>
+                              )}
+                              <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                <Clock className="w-4 h-4" />
+                                <span>{activity.duration}</span>
+                              </div>
+                            </div>
+                            
+                            {/* Status Badge */}
+                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              activity.type === 'job_completed' || activity.type === 'course_completed' || activity.type === 'karma_completed'
+                                ? 'bg-green-500/20 text-green-400'
+                                : activity.type === 'job_active'
+                                ? 'bg-orange-500/20 text-orange-400'
+                                : activity.type === 'job_rejected'
+                                ? 'bg-red-500/20 text-red-400'
+                                : 'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {activity.type === 'job_completed' && '✅ Abgeschlossen'}
+                              {activity.type === 'course_completed' && '📚 Abgeschlossen'}
+                              {activity.type === 'karma_completed' && '⭐ Abgeschlossen'}
+                              {activity.type === 'job_active' && '🔄 In Bearbeitung'}
+                              {activity.type === 'job_rejected' && '❌ Abgelehnt'}
+                            </div>
+                          </div>
+                          
+                          {activity.reason && (
+                            <div className={`mt-3 p-3 rounded-lg ${isDark ? 'bg-red-900/20 border border-red-500/30' : 'bg-red-50 border border-red-200'}`}>
+                              <p className={`text-sm ${isDark ? 'text-red-300' : 'text-red-700'}`}>
+                                <strong>Grund:</strong> {activity.reason}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'} group-hover:translate-x-1 transition-transform duration-300`} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return null;
       case 'add':
         if (showCreateCashJob) {
           return <CreateCashJobPage isDark={isDark} onBack={() => setShowCreateCashJob(false)} />;
@@ -308,6 +552,13 @@ function App() {
               <div className="space-y-3">
                 {activities.map((activity, index) => (
                   <div key={index} className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group cursor-pointer`}>
+                    <div 
+                      onClick={() => {
+                        setActiveTab('activities');
+                        setShowActivities(true);
+                      }}
+                      className="cursor-pointer"
+                    >
                     <div className="flex items-center space-x-4">
                       <div className={`w-12 h-12 ${activity.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
                         <activity.icon className="w-6 h-6 text-white" />
@@ -322,8 +573,27 @@ function App() {
                       </div>
                       <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'} group-hover:translate-x-1 transition-transform duration-300`} />
                     </div>
+                    </div>
                   </div>
                 ))}
+                
+                {/* Show All Activities Button */}
+                <button
+                  onClick={() => {
+                    setActiveTab('activities');
+                    setShowActivities(true);
+                  }}
+                  className={`w-full ${isDark ? 'bg-slate-800/80 border-slate-700 hover:bg-slate-700/80' : 'bg-white border-gray-200 hover:bg-gray-50'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] group text-center`}
+                >
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className={`w-10 h-10 rounded-full ${isDark ? 'bg-slate-700' : 'bg-gray-100'} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                      <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                    </div>
+                    <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Alle Aktivitäten anzeigen
+                    </span>
+                  </div>
+                </button>
               </div>
             </div>
           </>
