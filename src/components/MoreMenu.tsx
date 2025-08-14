@@ -108,6 +108,47 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [photoError, setPhotoError] = useState('');
   const [inviteCode, setInviteCode] = useState('CLEAN2024');
 
+  const handleKarmaExchange = async (type: 'karma-to-money' | 'money-to-karma') => {
+    setExchangeLoading(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const amount = type === 'karma-to-money' ? parseFloat(karmaToMoney) : parseFloat(moneyToKarma);
+      
+      // Add to history
+      const newExchange = {
+        type,
+        amount,
+        date: 'Gerade eben',
+        status: 'completed' as const
+      };
+      
+      setExchangeHistory(prev => [newExchange, ...prev]);
+      
+      // Reset inputs
+      if (type === 'karma-to-money') {
+        setKarmaToMoney('');
+      } else {
+        setMoneyToKarma('');
+      }
+      
+      // Show success message
+      if (type === 'karma-to-money') {
+        alert(`${amount} Karma erfolgreich in €${(amount / 100).toFixed(2)} getauscht!`);
+      } else {
+        alert(`€${amount.toFixed(2)} erfolgreich in ${(amount * 100).toLocaleString()} Karma getauscht!`);
+      }
+      
+    } catch (error) {
+      console.error('Exchange error:', error);
+      alert('Fehler beim Tauschen. Bitte versuchen Sie es erneut.');
+    } finally {
+      setExchangeLoading(false);
+    }
+  };
+
   const menuItems = [
     { id: 'profile', icon: User, label: 'Profil bearbeiten', description: 'Name, E-Mail, Bio ändern' },
     { id: 'payments', icon: CreditCard, label: 'Zahlungsmethoden', description: 'Karten und Guthaben verwalten' },
@@ -567,7 +608,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Name, E-Mail, Foto ändern</p>
             </div>
           </div>
-          <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+          <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
         </button>
 
         <button
@@ -583,7 +624,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Auszahlungen & Guthaben</p>
             </div>
           </div>
-          <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+          <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
         </button>
 
         <button
@@ -603,7 +644,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
           </div>
           <div className="flex items-center space-x-2 relative z-10">
             <span className="text-blue-500 font-bold text-sm">+50</span>
-            <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+            <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
           </div>
         </button>
 
@@ -619,7 +660,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Push & E-Mail Einstellungen</p>
             </div>
           </div>
-          <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+          <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
         </button>
       </div>
     </div>
