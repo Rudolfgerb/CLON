@@ -70,7 +70,17 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
       if (error) throw error;
 
       if (data.user) {
-        setMessage('Registrierung erfolgreich! Bitte bestätigen Sie Ihre E-Mail.');
+        setMessage('Registrierung erfolgreich! Sie können sich jetzt anmelden.');
+        // Switch to login with prefilled data
+        setIsLogin(true);
+        // Keep email and password filled, clear other fields
+        setName('');
+        setAcceptTerms(false);
+        setNoNewsletter(false);
+        // Clear error and show success message briefly
+        setTimeout(() => {
+          setMessage('');
+        }, 3000);
       }
     } catch (error: any) {
       setError(error.message || 'Registrierung fehlgeschlagen');
