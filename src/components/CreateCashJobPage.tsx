@@ -32,7 +32,9 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
     category: 'development',
     location: 'remote',
     customLocation: '',
+    paymentType: 'hourly', // 'hourly' or 'fixed'
     hourlyRate: '',
+    fixedAmount: '',
     estimatedHours: 1,
     maxDuration: { type: 'hours', value: 24 },
     difficulty: 'easy',
@@ -92,9 +94,13 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
   };
 
   const calculateTotalPayment = () => {
-    const rate = parseFloat(jobData.hourlyRate) || 0;
-    const hours = jobData.estimatedHours || 0;
-    return (rate * hours).toFixed(2);
+    if (jobData.paymentType === 'fixed') {
+      return parseFloat(jobData.fixedAmount) || 0;
+    } else {
+      const rate = parseFloat(jobData.hourlyRate) || 0;
+      const hours = jobData.estimatedHours || 0;
+      return (rate * hours).toFixed(2);
+    }
   };
 
   const calculateExpirationDate = () => {
@@ -121,8 +127,14 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
       if (!jobData.description.trim()) {
         throw new Error('Beschreibung ist erforderlich');
       }
-      if (!jobData.hourlyRate || parseFloat(jobData.hourlyRate) <= 0) {
-        throw new Error('Stundensatz muss größer als 0 sein');
+      if (jobData.paymentType === 'hourly') {
+        if (!jobData.hourlyRate || parseFloat(jobData.hourlyRate) <= 0) {
+          throw new Error('Stundensatz muss größer als 0 sein');
+        }
+      } else {
+        if (!jobData.fixedAmount || parseFloat(jobData.fixedAmount) <= 0) {
+          throw new Error('Gesamtbetrag muss größer als 0 sein');
+        }
       }
 
       // Calculate expiration date
@@ -139,8 +151,9 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
         description: jobData.description.trim(),
         category: jobData.category,
         location: jobData.location === 'custom' ? jobData.customLocation : jobData.location,
-        hourly_rate: parseFloat(jobData.hourlyRate),
-        estimated_hours: jobData.estimatedHours,
+        hourly_rate: jobData.paymentType === 'hourly' ? parseFloat(jobData.hourlyRate) : null,
+        estimated_hours: jobData.paymentType === 'hourly' ? jobData.estimatedHours : null,
+        fixed_amount: jobData.paymentType === 'fixed' ? parseFloat(jobData.fixedAmount) : null,
         total_payment: parseFloat(calculateTotalPayment()),
         difficulty: jobData.difficulty,
         tags: jobData.tags.filter(tag => tag.trim() !== ''),
@@ -360,10 +373,125 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
             </h2>
             
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Payment Type Selection */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Bezahlungsart
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => updateJobData('paymentType', 'hourly')}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                      jobData.paymentType === 'hourly'
+                        ? 'border-green-500 bg-green-500/20'
+                        : isDark
+                          ? 'border-slate-600 hover:border-slate-500'
+                          : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <Clock className={`w-6 h-6 mx-auto mb-2 ${
+                        jobData.paymentType === 'hourly' ? 'text-green-500' : isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`} />
+                      <h3 className={`font-semibold text-sm mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Stundenlohn
+                      </h3>
+                      <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        €/Stunde × Stunden
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateJobData('paymentType', 'fixed')}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                      jobData.paymentType === 'fixed'
+                        ? 'border-green-500 bg-green-500/20'
+                        : isDark
+                          ? 'border-slate-600 hover:border-slate-500'
+                          : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <Euro className={`w-6 h-6 mx-auto mb-2 ${
+                        jobData.paymentType === 'fixed' ? 'text-green-500' : isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`} />
+                      <h3 className={`font-semibold text-sm mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Festpreis
+                      </h3>
+                      <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Gesamtbetrag
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+              {/* Payment Input Fields */}
+              {jobData.paymentType === 'hourly' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Stundensatz (€) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Euro className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.50"
+                        value={jobData.hourlyRate}
+                        onChange={(e) => updateJobData('hourlyRate', e.target.value)}
+                        placeholder="25.00"
+                        className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
+                          isDark 
+                            ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                            : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Geschätzte Stunden
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => updateJobData('estimatedHours', Math.max(1, jobData.estimatedHours - 1))}
+                        className={`p-2 rounded-lg ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={jobData.estimatedHours}
+                        onChange={(e) => updateJobData('estimatedHours', Math.max(1, parseInt(e.target.value) || 1))}
+                        className={`flex-1 px-4 py-3 rounded-xl border transition-colors text-center ${
+                          isDark 
+                            ? 'bg-slate-700 border-slate-600 text-white' 
+                            : 'bg-gray-50 border-gray-200 text-gray-900'
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateJobData('estimatedHours', Math.min(24, jobData.estimatedHours + 1))}
+                        className={`p-2 rounded-lg ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Stundensatz (€) <span className="text-red-500">*</span>
+                    Gesamtbetrag (€) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Euro className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -371,9 +499,9 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
                       type="number"
                       min="1"
                       step="0.50"
-                      value={jobData.hourlyRate}
-                      onChange={(e) => updateJobData('hourlyRate', e.target.value)}
-                      placeholder="25.00"
+                      value={jobData.fixedAmount}
+                      onChange={(e) => updateJobData('fixedAmount', e.target.value)}
+                      placeholder="150.00"
                       className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
                         isDark 
                           ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
@@ -382,42 +510,11 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
                       required
                     />
                   </div>
+                  <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Fester Betrag für das gesamte Projekt
+                  </p>
                 </div>
-
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Geschätzte Stunden
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => updateJobData('estimatedHours', Math.max(1, jobData.estimatedHours - 1))}
-                      className={`p-2 rounded-lg ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      max="24"
-                      value={jobData.estimatedHours}
-                      onChange={(e) => updateJobData('estimatedHours', Math.max(1, parseInt(e.target.value) || 1))}
-                      className={`flex-1 px-4 py-3 rounded-xl border transition-colors text-center ${
-                        isDark 
-                          ? 'bg-slate-700 border-slate-600 text-white' 
-                          : 'bg-gray-50 border-gray-200 text-gray-900'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => updateJobData('estimatedHours', Math.min(24, jobData.estimatedHours + 1))}
-                      className={`p-2 rounded-lg ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Duration Selection */}
               <div>
@@ -472,9 +569,16 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
                     €{calculateTotalPayment()}
                   </span>
                 </div>
-                <p className={`text-sm mt-1 ${isDark ? 'text-green-300' : 'text-green-700'}`}>
-                  {jobData.estimatedHours}h × €{jobData.hourlyRate || '0'}/h
-                </p>
+                {jobData.paymentType === 'hourly' && (
+                  <p className={`text-sm mt-1 ${isDark ? 'text-green-300' : 'text-green-700'}`}>
+                    {jobData.estimatedHours}h × €{jobData.hourlyRate || '0'}/h
+                  </p>
+                )}
+                {jobData.paymentType === 'fixed' && (
+                  <p className={`text-sm mt-1 ${isDark ? 'text-green-300' : 'text-green-700'}`}>
+                    Festpreis für das gesamte Projekt
+                  </p>
+                )}
               </div>
             </div>
           </div>
