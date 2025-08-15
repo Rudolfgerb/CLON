@@ -85,6 +85,7 @@ export interface Application {
   status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
   updated_at: string;
+  read?: boolean; // Add this optional field
 }
 
 export interface Notification {
