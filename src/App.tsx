@@ -498,10 +498,10 @@ function App() {
         return <MoreMenu isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />;
       case 'add':
         if (showCreateCashJob) {
-          return <CreateCashJobPage isDark={isDark} onBack={() => setShowCreateCashJob(false)} />;
+          return <CreateCashJobPage isDark={isDark} onBack={() => setShowCreateCashJob(false)} user={user} />;
         }
         if (showCreateKarmaJob) {
-          return <CreateKarmaJobPage isDark={isDark} onBack={() => setShowCreateKarmaJob(false)} />;
+          return <CreateKarmaJobPage isDark={isDark} onBack={() => setShowCreateKarmaJob(false)} user={user} />;
         }
         return (
           <div className="flex-1 overflow-y-auto pb-32">

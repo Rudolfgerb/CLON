@@ -19,9 +19,10 @@ import {
 interface CreateCashJobPageProps {
   isDark: boolean;
   onBack: () => void;
+  user: any;
 }
 
-const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack }) => {
+const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack, user }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -208,7 +209,8 @@ const CreateCashJobPage: React.FC<CreateCashJobPageProps> = ({ isDark, onBack })
         deliverables: jobData.deliverables.trim(),
         expires_at: expirationDate.toISOString(),
         status: 'active',
-        job_type: 'cash'
+        job_type: 'cash',
+        created_by: user?.id
       };
 
       // Insert job into database
