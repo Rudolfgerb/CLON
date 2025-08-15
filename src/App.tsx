@@ -451,9 +451,9 @@ function App() {
   }
 
   // Enable authentication
-  if (!user) {
-    return <AuthPage onAuthSuccess={handleAuthSuccess} />;
-  }
+  // if (!user) {
+  //   return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+  // }
 
   const stats = [
     { label: 'Meine Jobs', value: '12', color: 'text-blue-400' },
