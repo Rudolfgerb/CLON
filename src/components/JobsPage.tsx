@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MapPin, Clock, Euro, Star, Briefcase, Users, TrendingUp, X, Send, User, Mail, FileText, AlertCircle, Calendar, Tag, ChevronRight, Heart, Bookmark } from 'lucide-react';
+import { Search, Filter, MapPin, Clock, Euro, Star, Briefcase, Users, TrendingUp, X, Send, User, Mail, FileText, AlertCircle, Calendar, Tag, ChevronRight, Heart, Bookmark, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import CreateCashJobPage from './CreateCashJobPage';
+import CreateKarmaJobPage from './CreateKarmaJobPage';
 
 interface Job {
   id: string;
@@ -42,6 +44,9 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }
   const [showFilters, setShowFilters] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [showCreateJobModal, setShowCreateJobModal] = useState(false);
+  const [showCreateCashJob, setShowCreateCashJob] = useState(false);
+  const [showCreateKarmaJob, setShowCreateKarmaJob] = useState(false);
   
   // Application form state
   const [applicationData, setApplicationData] = useState({
@@ -285,6 +290,34 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }
     }
   };
 
+  const openCreateJobModal = () => {
+    setShowCreateJobModal(true);
+  };
+
+  const closeCreateJobModal = () => {
+    setShowCreateJobModal(false);
+  };
+
+  const openCreateCashJob = () => {
+    setShowCreateJobModal(false);
+    setShowCreateCashJob(true);
+  };
+
+  const openCreateKarmaJob = () => {
+    setShowCreateJobModal(false);
+    setShowCreateKarmaJob(true);
+  };
+
+  const closeCreateCashJob = () => {
+    setShowCreateCashJob(false);
+    loadJobs(); // Refresh jobs after creation
+  };
+
+  const closeCreateKarmaJob = () => {
+    setShowCreateKarmaJob(false);
+    loadJobs(); // Refresh jobs after creation
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -297,6 +330,152 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }
 
   return (
     <>
+      {/* Create Job Modal */}
+      {showCreateJobModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl w-full max-w-md border shadow-2xl`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Job erstellen
+                </h2>
+                <button
+                  onClick={closeCreateJobModal}
+                  className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
+                >
+                  <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+                </button>
+              </div>
+
+              <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-8 text-center`}>
+                Wähle den Typ deines Jobs aus
+              </p>
+
+              <div className="space-y-4">
+                {/* Cash Job Option */}
+                <button 
+                  onClick={openCreateCashJob}
+                  className="group w-full relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/30"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                        <Euro className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold">€€€</div>
+                        <div className="text-xs opacity-90">Geld verdienen</div>
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Cash Job</h3>
+                    <p className="text-sm opacity-90 mb-3">
+                      Erstelle einen bezahlten Job und verdiene echtes Geld
+                    </p>
+                    <div className="flex items-center space-x-3 text-xs opacity-80">
+                      <div className="flex items-center">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full mr-1.5"></div>
+                        Sofortige Bezahlung
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full mr-1.5"></div>
+                        Professionell
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Karma Job Option */}
+                <button 
+                  onClick={openCreateKarmaJob}
+                  className="group w-full relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/30"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                        <Star className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold">⭐⭐⭐</div>
+                        <div className="text-xs opacity-90">Karma sammeln</div>
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Karma Job</h3>
+                    <p className="text-sm opacity-90 mb-3">
+                      Sammle Karma-Punkte und baue deine Reputation auf
+                    </p>
+                    <div className="flex items-center space-x-3 text-xs opacity-80">
+                      <div className="flex items-center">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full mr-1.5"></div>
+                        Community Hilfe
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full mr-1.5"></div>
+                        Skill Building
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Info Section */}
+              <div className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-xl p-4 border mt-6`}>
+                <h4 className={`font-semibold mb-2 text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Was ist der Unterschied?
+                </h4>
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-4 h-4 bg-green-500/20 rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Euro className="w-2 h-2 text-green-500" />
+                    </div>
+                    <div>
+                      <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Cash Jobs</p>
+                      <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Bezahlte Projekte für sofortiges Einkommen
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="w-4 h-4 bg-purple-500/20 rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Star className="w-2 h-2 text-purple-500" />
+                    </div>
+                    <div>
+                      <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Karma Jobs</p>
+                      <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Community-Aufgaben zum Lernen und Reputation aufbauen
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Cash Job Page */}
+      {showCreateCashJob && (
+        <div className="fixed inset-0 bg-slate-900 z-50 flex flex-col">
+          <CreateCashJobPage 
+            isDark={isDark} 
+            onBack={closeCreateCashJob} 
+            user={user} 
+          />
+        </div>
+      )}
+
+      {/* Create Karma Job Page */}
+      {showCreateKarmaJob && (
+        <div className="fixed inset-0 bg-slate-900 z-50 flex flex-col">
+          <CreateKarmaJobPage 
+            isDark={isDark} 
+            onBack={closeCreateKarmaJob} 
+            user={user} 
+          />
+        </div>
+      )}
+
       {/* Job Details Modal */}
       {selectedJob && !showApplicationModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -636,12 +815,21 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }
                 {filteredJobs.length} verfügbare Jobs
               </p>
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-3 rounded-xl ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
-            >
-              <Filter className={`w-5 h-5 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={openCreateJobModal}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-xl font-semibold hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-blue-500/30 flex items-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Job erstellen</span>
+              </button>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`p-3 rounded-xl ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
+              >
+                <Filter className={`w-5 h-5 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+              </button>
+            </div>
           </div>
 
           {/* Search */}
