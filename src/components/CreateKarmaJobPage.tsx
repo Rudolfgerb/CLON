@@ -182,6 +182,13 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
     setSuccess('');
 
     try {
+      // Check if user is authenticated
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('Sie müssen angemeldet sein, um einen Job zu erstellen');
+      }
+
       // Validate required fields
       if (!jobData.title.trim()) {
         throw new Error('Titel ist erforderlich');
@@ -215,7 +222,7 @@ const CreateKarmaJobPage: React.FC<CreateKarmaJobPageProps> = ({ isDark, onBack 
         expires_at: expirationDate.toISOString(),
         status: 'active',
         job_type: 'karma'
-      };
+        created_by: currentUser.id
 
       // Insert job into database
       const { data, error: insertError } = await supabase

@@ -100,10 +100,15 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }
   const loadJobs = async () => {
     try {
       setLoading(true);
+      
+      // Load jobs - this will work for both authenticated and anonymous users
+      // RLS policies will automatically filter based on user permissions
       const { data, error } = await supabase
         .from('jobs')
-        .select('*')
-        .eq('status', 'active')
+        .select(`
+          *,
+          profiles!jobs_created_by_fkey(full_name)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
