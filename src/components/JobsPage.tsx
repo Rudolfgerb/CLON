@@ -223,13 +223,29 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }
     setApplicationError('');
     setApplicationSuccess('');
 
-    if (!selectedJob || !user?.id) {
-      setApplicationError('Invalid job or user data');
+    if (!selectedJob) {
+      setApplicationError('Kein Job ausgewählt');
       setApplicationLoading(false);
       return;
     }
 
     try {
+      // Check if user is authenticated
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('Sie müssen angemeldet sein, um sich zu bewerben');
+      }
+
+      // Check if user can apply to this job
+      const { data: canApply, error: checkError } = await supabase
+        .rpc('can_apply_to_job', { job_id: selectedJob.id });
+
+      if (checkError) throw checkError;
+      if (!canApply) {
+        throw new Error('Sie können sich nicht auf diesen Job bewerben');
+      }
+
       // Validate required fields
       if (!applicationData.message.trim()) {
         throw new Error('Bewerbungsnachricht ist erforderlich');
@@ -238,7 +254,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }
       // Prepare application data
       const applicationPayload = {
         job_id: selectedJob.id,
-        applicant_id: user.id,
+        applicant_id: currentUser.id,
         message: applicationData.message.trim(),
         hourly_rate: selectedJob.job_type === 'cash' && applicationData.hourlyRate 
           ? parseFloat(applicationData.hourlyRate) 
@@ -271,7 +287,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }
           job_id: selectedJob.id,
           job_title: selectedJob.title,
           application_id: application.id,
-          applicant_name: user?.user_metadata?.full_name || 'Bewerber',
+          applicant_name: currentUser?.user_metadata?.full_name || 'Bewerber',
           hourly_rate: applicationData.hourlyRate
         },
         read: false
