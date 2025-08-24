@@ -10,6 +10,8 @@ import CreateCashJobPage from './components/CreateCashJobPage';
 import CreateKarmaJobPage from './components/CreateKarmaJobPage';
 import NotificationsPage from './components/NotificationsPage';
 import GameNotificationSystem from './components/GameNotificationSystem';
+import SuccessPage from './components/SuccessPage';
+import CancelPage from './components/CancelPage';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -22,6 +24,8 @@ function App() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [gameNotifications, setGameNotifications] = useState<any[]>([]);
   const [showActivityDetails, setShowActivityDetails] = useState(false);
+  const [showSuccessPage, setShowSuccessPage] = useState(false);
+  const [showCancelPage, setShowCancelPage] = useState(false);
   
   // Real data states
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -45,7 +49,20 @@ function App() {
     achievements: false,
     campusUpdates: false
   });
+
   useEffect(() => {
+    // Check for success/cancel parameters in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      setShowSuccessPage(true);
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('canceled') === 'true') {
+      setShowCancelPage(true);
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -442,12 +459,37 @@ function App() {
     // User state will be updated automatically by the auth listener
   };
 
+  const handleSuccessContinue = () => {
+    setShowSuccessPage(false);
+    setActiveTab('home');
+  };
+
+  const handleCancelBack = () => {
+    setShowCancelPage(false);
+    setActiveTab('home');
+  };
+
+  const handleCancelRetry = () => {
+    setShowCancelPage(false);
+    setActiveTab('more');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
         <div className="text-white text-xl">Lädt...</div>
       </div>
     );
+  }
+
+  // Show success page
+  if (showSuccessPage) {
+    return <SuccessPage isDark={isDark} onContinue={handleSuccessContinue} />;
+  }
+
+  // Show cancel page
+  if (showCancelPage) {
+    return <CancelPage isDark={isDark} onBack={handleCancelBack} onRetry={handleCancelRetry} />;
   }
 
   // Enable authentication

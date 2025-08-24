@@ -1,1621 +1,756 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { 
   User, 
-  CreditCard, 
-  Bell, 
-  HelpCircle, 
-  Shield, 
-  Mail, 
   Settings, 
-  ChevronRight, 
-  ArrowLeft,
-  Edit,
-  Camera,
-  Save,
-  Plus,
-  Trash2,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  MessageCircle,
-  Clock,
+  CreditCard, 
+  HelpCircle, 
+  LogOut, 
+  Moon, 
+  Sun, 
+  Bell,
+  Shield,
+  FileText,
+  Mail,
+  Star,
+  Crown,
+  Zap,
+  Euro,
+  Gift,
+  ChevronRight,
   Check,
   X,
-  Eye,
-  EyeOff,
-  Download,
   AlertCircle,
-  Phone,
-  Globe,
-  Lock,
-  Upload,
-  Image
+  Loader2
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { products, getProductByPriceId } from '../stripe-config';
 
 interface MoreMenuProps {
   isDark: boolean;
   onToggleTheme: () => void;
 }
 
-type PageType = 'main' | 'profile' | 'payments' | 'notifications' | 'help' | 'privacy' | 'contact';
+interface UserSubscription {
+  subscription_status: string;
+  price_id: string | null;
+  current_period_end: number | null;
+  cancel_at_period_end: boolean;
+}
 
 const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
-  const [currentPage, setCurrentPage] = useState<PageType>('main');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showExitWarning, setShowExitWarning] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-  const [showPayments, setShowPayments] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
-  const [showInviteFriends, setShowInviteFriends] = useState(false);
+  const [showPayments, setShowPayments] = useState(false);
+  const [showPremium, setShowPremium] = useState(false);
+  const [showKarmaStore, setShowKarmaStore] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Profile form state
+  const [profileData, setProfileData] = useState({
+    full_name: '',
+    email: ''
+  });
 
   useEffect(() => {
-    const handleNavigateToPayments = () => {
-      setCurrentPage('payments');
-    };
-
+    loadUserData();
+    
+    // Listen for navigation events
     const handleNavigateToProfile = () => {
-      setCurrentPage('profile');
+      setShowProfile(true);
+    };
+    
+    const handleNavigateToPayments = () => {
+      setShowPayments(true);
     };
 
-    const handleInviteNavigation = () => {
-      setShowInviteFriends(true);
-    };
-
-    // Listen for navigation events from header
-    window.addEventListener('navigateToPayments', handleNavigateToPayments);
     window.addEventListener('navigateToProfile', handleNavigateToProfile);
-    window.addEventListener('navigateToInvite', handleInviteNavigation);
-
+    window.addEventListener('navigateToPayments', handleNavigateToPayments);
+    
     return () => {
-      window.removeEventListener('navigateToPayments', handleNavigateToPayments);
       window.removeEventListener('navigateToProfile', handleNavigateToProfile);
-      window.removeEventListener('navigateToInvite', handleInviteNavigation);
+      window.removeEventListener('navigateToPayments', handleNavigateToPayments);
     };
   }, []);
 
-  const [profileData, setProfileData] = useState({
-    name: 'Max Mustermann',
-    email: 'max@example.com',
-    phone: '+49 123 456789',
-    bio: 'Frontend Developer mit 5 Jahren Erfahrung',
-    location: 'Berlin, Deutschland',
-    website: 'https://maxmustermann.dev'
-  });
-  const [notificationSettings, setNotificationSettings] = useState({
-    pushJobs: true,
-    pushApplications: true,
-    pushPayments: true,
-    emailNewsletter: false,
-    emailUpdates: true,
-    quietHoursEnabled: true,
-    quietStart: '22:00',
-    quietEnd: '08:00'
-  });
-  const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
-  const [contactForm, setContactForm] = useState({
-    subject: 'general',
-    message: '',
-    email: profileData.email
-  });
-  const [privacySettings, setPrivacySettings] = useState({
-    profileVisible: true,
-    showActivity: false,
-    dataCollection: true
-  });
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [photoError, setPhotoError] = useState('');
-  const [inviteCode, setInviteCode] = useState('CLEAN2024');
-
-  const handleKarmaExchange = async (type: 'karma-to-money' | 'money-to-karma') => {
-    setExchangeLoading(true);
-    
+  const loadUserData = async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const amount = type === 'karma-to-money' ? parseFloat(karmaToMoney) : parseFloat(moneyToKarma);
-      
-      // Add to history
-      const newExchange = {
-        type,
-        amount,
-        date: 'Gerade eben',
-        status: 'completed' as const
-      };
-      
-      setExchangeHistory(prev => [newExchange, ...prev]);
-      
-      // Reset inputs
-      if (type === 'karma-to-money') {
-        setKarmaToMoney('');
-      } else {
-        setMoneyToKarma('');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setUser(user);
+
+      // Load profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        setUserProfile(profile);
+        setProfileData({
+          full_name: profile.full_name || '',
+          email: profile.email || user.email || ''
+        });
       }
-      
-      // Show success message
-      if (type === 'karma-to-money') {
-        alert(`${amount} Karma erfolgreich in €${(amount / 100).toFixed(2)} getauscht!`);
-      } else {
-        alert(`€${amount.toFixed(2)} erfolgreich in ${(amount * 100).toLocaleString()} Karma getauscht!`);
+
+      // Load subscription data
+      const { data: subscriptionData } = await supabase
+        .from('stripe_user_subscriptions')
+        .select('*')
+        .maybeSingle();
+
+      if (subscriptionData) {
+        setSubscription(subscriptionData);
       }
-      
+
     } catch (error) {
-      console.error('Exchange error:', error);
-      alert('Fehler beim Tauschen. Bitte versuchen Sie es erneut.');
+      console.error('Error loading user data:', error);
     } finally {
-      setExchangeLoading(false);
+      setLoading(false);
     }
   };
 
-  const menuItems = [
-    { id: 'profile', icon: User, label: 'Profil bearbeiten', description: 'Name, E-Mail, Bio ändern' },
-    { id: 'payments', icon: CreditCard, label: 'Zahlungsmethoden', description: 'Karten und Guthaben verwalten' },
-    { id: 'notifications', icon: Bell, label: 'Benachrichtigungen', description: 'Push und E-Mail Einstellungen' },
-    { id: 'help', icon: HelpCircle, label: 'Hilfe & FAQ', description: 'Häufige Fragen und Support' },
-    { id: 'privacy', icon: Shield, label: 'Datenschutz', description: 'Privatsphäre und Sicherheit' },
-    { id: 'contact', icon: Mail, label: 'Kontakt', description: 'Support kontaktieren' },
-  ];
-
-  const paymentMethods = [
-    { id: 1, type: 'visa', last4: '4242', expiry: '12/25', isDefault: true },
-    { id: 2, type: 'paypal', email: 'max@example.com', isDefault: false }
-  ];
-
-  const faqItems = [
-    {
-      question: 'Wie erstelle ich einen Job?',
-      answer: 'Klicke auf das Plus-Symbol in der Navigation und wähle zwischen Cash Job oder Karma Job. Fülle alle erforderlichen Felder aus und veröffentliche deinen Job.'
-    },
-    {
-      question: 'Wann erhalte ich meine Bezahlung?',
-      answer: 'Bei Cash Jobs wird die Zahlung sofort nach Abschluss des Jobs freigegeben. Das Geld ist innerhalb von 1-2 Werktagen auf deinem Konto.'
-    },
-    {
-      question: 'Was sind Karma-Punkte?',
-      answer: 'Karma-Punkte sind unser Belohnungssystem für Community-Beiträge. Du erhältst sie für abgeschlossene Karma Jobs und kannst sie für Premium-Features einsetzen.'
-    },
-    {
-      question: 'Wie kann ich mein Profil verbessern?',
-      answer: 'Vervollständige dein Profil, sammle positive Bewertungen und baue dein Portfolio auf. Je mehr Karma du hast, desto vertrauensvoller wirkst du.'
-    },
-    {
-      question: 'Was passiert bei Problemen mit einem Job?',
-      answer: 'Kontaktiere unseren Support über das Kontaktformular. Wir helfen bei Streitigkeiten und sorgen für faire Lösungen.'
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
-  ];
-
-  const updateProfileData = (field: string, value: string) => {
-    setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
-  const updateNotificationSetting = (setting: string, value: boolean | string) => {
-    setNotificationSettings(prev => ({ ...prev, [setting]: value }));
-  };
-
-  const updatePrivacySetting = (setting: string, value: boolean) => {
-    setPrivacySettings(prev => ({ ...prev, [setting]: value }));
-  };
-
-  const handleInviteFriendsBack = () => {
-    setShowInviteFriends(false);
-  };
-
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setPhotoError('Bitte wählen Sie eine Bilddatei aus');
-      return;
-    }
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      setPhotoError('Datei ist zu groß. Maximum 5MB erlaubt');
-      return;
-    }
-
-    setUploadingPhoto(true);
-    setPhotoError('');
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
 
     try {
-      // Create a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `profile-${Date.now()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profileData.full_name,
+          email: profileData.email
+        })
+        .eq('id', user.id);
 
-      // Upload file to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
+      if (error) throw error;
 
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      if (urlData?.publicUrl) {
-        setProfilePicture(urlData.publicUrl);
-        // Here you would typically update the user's profile in the database
-        console.log('Profile picture uploaded:', urlData.publicUrl);
-      }
-
-    } catch (error: any) {
-      console.error('Error uploading photo:', error);
-      setPhotoError(error.message || 'Fehler beim Hochladen des Fotos');
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
-  const removeProfilePicture = () => {
-    setProfilePicture(null);
-    setPhotoError('');
-  };
-
-  const copyInviteLink = () => {
-    const inviteLink = `${window.location.origin}?ref=${inviteCode}`;
-    navigator.clipboard.writeText(inviteLink);
-    // Show success message
-    const event = new CustomEvent('showToast', { 
-      detail: { message: 'Einladungslink kopiert!', type: 'success' } 
-    });
-    window.dispatchEvent(event);
-  };
-
-  const shareInvite = () => {
-    const shareData = {
-      title: 'CleanWork - Verdiene Geld mit Micro-Jobs!',
-      text: `Schau dir CleanWork an! Mit meinem Code "${inviteCode}" bekommst du 50 Bonus-Karma zum Start!`,
-      url: `${window.location.origin}?ref=${inviteCode}`
-    };
-    
-    if (navigator.share) {
-      navigator.share(shareData);
-    } else {
-      copyInviteLink();
-    }
-  };
-
-  // Track profile form changes
-  useEffect(() => {
-    if (currentPage === 'profile') {
-      const hasChanges = 
-        profileData.name !== 'Max Mustermann' ||
-        profileData.email !== 'max@example.com' ||
-        profileData.bio !== 'Frontend Developer mit 5 Jahren Erfahrung' ||
-        profileData.location !== 'Berlin, Deutschland' ||
-        profileData.website !== 'https://maxmustermann.dev' ||
-        profileData.phone !== '+49 123 456789' ||
-        profilePicture !== null;
+      setSuccess('Profil erfolgreich aktualisiert!');
+      setTimeout(() => setSuccess(''), 3000);
       
-      setHasUnsavedChanges(hasChanges);
-    } else {
-      setHasUnsavedChanges(false);
+      // Reload user data
+      await loadUserData();
+    } catch (error: any) {
+      setError(error.message || 'Fehler beim Aktualisieren des Profils');
+    } finally {
+      setLoading(false);
     }
-  }, [profileData, profilePicture, currentPage]);
+  };
 
-  // Prevent browser back/refresh with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
+  const handleCheckout = async (priceId: string, mode: 'payment' | 'subscription') => {
+    setCheckoutLoading(priceId);
+    setError('');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Nicht angemeldet');
       }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          price_id: priceId,
+          mode,
+          success_url: `${window.location.origin}/success`,
+          cancel_url: `${window.location.origin}/cancel`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Checkout fehlgeschlagen');
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      setError(error.message || 'Fehler beim Checkout');
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
+
+  const getSubscriptionStatus = () => {
+    if (!subscription) return null;
+    
+    const product = subscription.price_id ? getProductByPriceId(subscription.price_id) : null;
+    
+    return {
+      isActive: subscription.subscription_status === 'active',
+      productName: product?.name || 'Unbekanntes Produkt',
+      endDate: subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : null,
+      willCancel: subscription.cancel_at_period_end
     };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  const handleNavigation = (destination: PageType) => {
-    if (hasUnsavedChanges) {
-      setPendingNavigation(destination);
-      setShowExitWarning(true);
-    } else {
-      executeNavigation(destination);
-    }
   };
 
-  const executeNavigation = (destination: PageType | string) => {
-    if (typeof destination === 'string') {
-      setCurrentPage(destination as PageType);
-    } else {
-      setCurrentPage(destination);
-    }
-  };
+  const subscriptionStatus = getSubscriptionStatus();
 
-  const confirmExit = () => {
-    setShowExitWarning(false);
-    if (pendingNavigation) {
-      executeNavigation(pendingNavigation);
-      setPendingNavigation(null);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className={`text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Lädt...
+        </div>
+      </div>
+    );
+  }
 
-  const cancelExit = () => {
-    setShowExitWarning(false);
-    setPendingNavigation(null);
-  };
-
-  // Show Invite Friends Page
-  if (showInviteFriends) {
+  // Profile Page
+  if (showProfile) {
     return (
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="px-6 py-6">
-          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
               <button
-                onClick={handleInviteFriendsBack}
+                onClick={() => setShowProfile(false)}
                 className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
               >
-                <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+                <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
               </button>
               <div>
                 <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Freunde einladen
+                  Profil bearbeiten
                 </h1>
                 <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Verdiene Karma für jeden eingeladenen Freund
+                  Ihre persönlichen Informationen
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2 text-blue-500">
-              <User className="w-5 h-5" />
-              <span className="font-semibold">+50 Karma</span>
-            </div>
           </div>
 
-          {/* Invite Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border text-center`}>
-              <div className="text-2xl font-bold text-blue-500">3</div>
-              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Eingeladen</div>
-            </div>
-            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border text-center`}>
-              <div className="text-2xl font-bold text-green-500">2</div>
-              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Beigetreten</div>
-            </div>
-            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border text-center`}>
-              <div className="text-2xl font-bold text-purple-500">100</div>
-              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Karma verdient</div>
-            </div>
-          </div>
+          <form onSubmit={handleProfileUpdate} className="space-y-6">
+            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
+              <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Persönliche Daten
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Vollständiger Name
+                  </label>
+                  <div className="relative">
+                    <User className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                    <input
+                      type="text"
+                      value={profileData.full_name}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, full_name: e.target.value }))}
+                      className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
+                        isDark 
+                          ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                          : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                      placeholder="Ihr vollständiger Name"
+                      required
+                    />
+                  </div>
+                </div>
 
-          {/* Invite Code Section */}
-          <div className={`${isDark ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-500/30' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'} rounded-2xl p-6 border mb-6`}>
-            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Dein Einladungscode
-            </h2>
-            
-            <div className="flex items-center space-x-3 mb-4">
-              <div className={`flex-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-xl p-4 border`}>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-500 mb-1">{inviteCode}</div>
-                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Teile diesen Code mit Freunden
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    E-Mail Adresse
+                  </label>
+                  <div className="relative">
+                    <Mail className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                    <input
+                      type="email"
+                      value={profileData.email}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                      className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
+                        isDark 
+                          ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                          : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
+                      placeholder="ihre@email.com"
+                      required
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 flex items-center space-x-3">
+                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                <p className="text-red-200 text-sm">{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-500/20 border border-green-500/30 rounded-xl p-4 flex items-center space-x-3">
+                <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                <p className="text-green-200 text-sm">{success}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Wird gespeichert...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-5 h-5" />
+                  <span>Profil speichern</span>
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Payments Page
+  if (showPayments) {
+    return (
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="px-6 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
               <button
-                onClick={copyInviteLink}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-xl font-semibold hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-blue-500/30 flex items-center justify-center space-x-2"
+                onClick={() => setShowPayments(false)}
+                className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
               >
-                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <span>Link kopieren</span>
+                <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
               </button>
-              
-              <button
-                onClick={shareInvite}
-                className={`border-2 ${isDark ? 'border-blue-500 text-blue-400 hover:bg-blue-500/10' : 'border-blue-500 text-blue-600 hover:bg-blue-50'} py-3 px-4 rounded-xl font-semibold hover:scale-[1.02] transition-all duration-300 flex items-center justify-center space-x-2`}
-              >
-                <User className="w-4 h-4" />
-                <span>Teilen</span>
-              </button>
+              <div>
+                <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Zahlungen & Abos
+                </h1>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Verwalten Sie Ihre Abonnements
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* How it works */}
+          {/* Current Subscription Status */}
           <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border mb-6`}>
             <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              So funktioniert's
+              Aktueller Status
             </h2>
             
-            <div className="space-y-4">
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-blue-500 font-bold text-sm">1</span>
+            {subscriptionStatus?.isActive ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                    <Crown className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {subscriptionStatus.productName}
+                    </h3>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {subscriptionStatus.willCancel 
+                        ? `Läuft ab am ${subscriptionStatus.endDate?.toLocaleDateString('de-DE')}`
+                        : `Verlängert sich am ${subscriptionStatus.endDate?.toLocaleDateString('de-DE')}`
+                      }
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    Code teilen
-                  </h3>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Teile deinen Einladungscode mit Freunden und Familie
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-green-500 font-bold text-sm">2</span>
-                </div>
-                <div>
-                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    Freund registriert sich
-                  </h3>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Dein Freund verwendet deinen Code bei der Registrierung
-                  </p>
+                <div className="px-3 py-1 bg-green-500/20 text-green-500 rounded-full text-sm font-medium">
+                  Aktiv
                 </div>
               </div>
-              
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-purple-500 font-bold text-sm">3</span>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CreditCard className={`w-8 h-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
                 </div>
-                <div>
-                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    Beide erhalten Bonus
-                  </h3>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Du und dein Freund erhalten jeweils 50 Karma-Punkte
-                  </p>
-                </div>
+                <h3 className={`font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Kein aktives Abonnement
+                </h3>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Upgraden Sie zu Premium für erweiterte Features
+                </p>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Invited Friends List */}
-          <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Eingeladene Freunde
-            </h2>
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => setShowPremium(true)}
+              className="group relative overflow-hidden bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/30"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              <Crown className="w-8 h-8 mb-3 relative z-10" />
+              <div className="text-left relative z-10">
+                <div className="font-bold text-lg">Premium</div>
+                <div className="text-sm opacity-90">Upgrade jetzt</div>
+              </div>
+            </button>
             
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      Anna Schmidt
-                    </h4>
-                    <p className="text-sm text-green-500">Beigetreten • +50 Karma</p>
-                  </div>
-                </div>
-                <div className="text-green-500 font-bold">✓</div>
+            <button
+              onClick={() => setShowKarmaStore(true)}
+              className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/30"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              <Star className="w-8 h-8 mb-3 relative z-10" />
+              <div className="text-left relative z-10">
+                <div className="font-bold text-lg">Karma Shop</div>
+                <div className="text-sm opacity-90">Punkte kaufen</div>
               </div>
-              
-              <div className="flex items-center justify-between p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      Tom Weber
-                    </h4>
-                    <p className="text-sm text-green-500">Beigetreten • +50 Karma</p>
-                  </div>
-                </div>
-                <div className="text-green-500 font-bold">✓</div>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      Lisa Müller
-                    </h4>
-                    <p className="text-sm text-yellow-500">Eingeladen • Wartet auf Registrierung</p>
-                  </div>
-                </div>
-                <div className="text-yellow-500 font-bold">⏳</div>
-              </div>
-            </div>
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  const renderMainMenu = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Einstellungen
-        </h1>
-        <Settings className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-      </div>
-
-      {/* User Info Card */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
-            <User className="w-8 h-8 text-white" />
-          </div>
-          <div className="flex-1">
-            <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {profileData.name}
-            </h3>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              {profileData.email}
-            </p>
-            <div className="flex items-center space-x-4 mt-2">
-              <span className="text-green-500 font-semibold">€247.50</span>
-              <span className="text-purple-500 font-semibold">1,247 Karma</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Menu Items */}
-      <div className="space-y-3">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setCurrentPage(item.id as PageType)}
-            className={`w-full ${isDark ? 'bg-slate-800/80 border-slate-700 hover:bg-slate-700/80' : 'bg-white border-gray-200 hover:bg-gray-50'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] group`}
-          >
+  // Premium Upgrade Page
+  if (showPremium) {
+    const premiumProduct = products.find(p => p.mode === 'subscription');
+    
+    return (
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="px-6 py-6">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <div className={`w-12 h-12 ${isDark ? 'bg-slate-700' : 'bg-gray-100'} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                <item.icon className={`w-6 h-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              </div>
-              <div className="flex-1 text-left">
-                <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {item.label}
-                </h3>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {item.description}
-                </p>
-              </div>
-              <ChevronRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'} group-hover:translate-x-1 transition-transform duration-300`} />
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Invite Friends Button */}
-      <div className="space-y-4">
-        <button
-          onClick={() => setShowProfile(true)}
-          className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-gray-50'} border ${isDark ? 'border-slate-700' : 'border-gray-200'}`}
-        >
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-left">
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Profil bearbeiten</h3>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Name, E-Mail, Foto ändern</p>
-            </div>
-          </div>
-          <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-        </button>
-
-        <button
-          onClick={() => setShowPayments(true)}
-          className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-gray-50'} border ${isDark ? 'border-slate-700' : 'border-gray-200'}`}
-        >
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-left">
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Zahlungen</h3>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Auszahlungen & Guthaben</p>
-            </div>
-          </div>
-          <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-        </button>
-
-        <button
-          onClick={() => setShowInviteFriends(true)}
-          className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-gray-50'} border ${isDark ? 'border-slate-700' : 'border-gray-200'} relative overflow-hidden`}
-        >
-          {/* Special highlight for invite feature */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
-          <div className="flex items-center space-x-4 relative z-10">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-left">
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Freunde einladen</h3>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>50 Karma pro Freund verdienen</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2 relative z-10">
-            <span className="text-blue-500 font-bold text-sm">+50</span>
-            <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-          </div>
-        </button>
-
-        <button
-          className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-gray-50'} border ${isDark ? 'border-slate-700' : 'border-gray-200'}`}
-        >
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-              <Bell className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-left">
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Benachrichtigungen</h3>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Push & E-Mail Einstellungen</p>
-            </div>
-          </div>
-          <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderProfilePage = () => (
-    <>
-      {/* Exit Warning Modal */}
-      {showExitWarning && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl p-6 w-full max-w-md border shadow-2xl`}>
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-8 h-8 text-orange-500" />
-              </div>
-              <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Ungespeicherte Änderungen
-              </h2>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Du hast ungespeicherte Änderungen am Profil. Möchtest du wirklich fortfahren? Alle Änderungen gehen verloren.
-              </p>
-            </div>
-            
-            <div className="flex space-x-3">
               <button
-                onClick={cancelExit}
-                className={`flex-1 px-4 py-3 rounded-xl border font-semibold transition-all duration-300 ${
-                  isDark 
-                    ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' 
-                    : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
-                }`}
+                onClick={() => setShowPremium(false)}
+                className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
               >
-                Abbrechen
+                <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
               </button>
-              <button
-                onClick={confirmExit}
-                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-red-500/30"
-              >
-                Trotzdem verlassen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => handleNavigation('main')}
-              className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
-            >
-              <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-            </button>
-            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Profil bearbeiten
-            </h1>
-          </div>
-          {hasUnsavedChanges && (
-            <div className="flex items-center space-x-2 text-orange-500">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">Ungespeichert</span>
-            </div>
-          )}
-        </div>
-
-        {/* Profile Picture */}
-        <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-          <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Profilbild
-          </h2>
-          <div className="flex items-center space-x-4">
-            <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center overflow-hidden">
-              {profilePicture ? (
-                <img 
-                  src={profilePicture} 
-                  alt="Profilbild" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-10 h-10 text-white" />
-              )}
-              {uploadingPhoto && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              )}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-2">
-                <label className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                    disabled={uploadingPhoto}
-                  />
-                  {uploadingPhoto ? (
-                    <Upload className="w-4 h-4 animate-pulse" />
-                  ) : (
-                    <Camera className="w-4 h-4" />
-                  )}
-                  <span>{uploadingPhoto ? 'Lädt hoch...' : 'Foto ändern'}</span>
-                </label>
-                {profilePicture && (
-                  <button
-                    onClick={removeProfilePicture}
-                    className="p-2 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors"
-                    title="Foto entfernen"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                JPG, PNG oder GIF. Max. 5MB.
-              </p>
-              {photoError && (
-                <div className="mt-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg">
-                  <p className="text-red-400 text-sm flex items-center space-x-2">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>{photoError}</span>
-                  </p>
-                </div>
-              )}
-              {profilePicture && !photoError && (
-                <div className="mt-2 p-2 bg-green-500/20 border border-green-500/30 rounded-lg">
-                  <p className="text-green-400 text-sm flex items-center space-x-2">
-                    <Check className="w-4 h-4 flex-shrink-0" />
-                    <span>Foto erfolgreich hochgeladen!</span>
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Personal Information */}
-        <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-          <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Persönliche Informationen
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                Vollständiger Name
-              </label>
-              <input
-                type="text"
-                value={profileData.name}
-                onChange={(e) => updateProfileData('name', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                  isDark 
-                    ? 'bg-slate-700 border-slate-600 text-white' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                E-Mail Adresse
-              </label>
-              <input
-                type="email"
-                value={profileData.email}
-                onChange={(e) => updateProfileData('email', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                  isDark 
-                    ? 'bg-slate-700 border-slate-600 text-white' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                Telefonnummer
-              </label>
-              <input
-                type="tel"
-                value={profileData.phone}
-                onChange={(e) => updateProfileData('phone', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                  isDark 
-                    ? 'bg-slate-700 border-slate-600 text-white' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                Bio
-              </label>
-              <textarea
-                rows={3}
-                value={profileData.bio}
-                onChange={(e) => updateProfileData('bio', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border transition-colors resize-none ${
-                  isDark 
-                    ? 'bg-slate-700 border-slate-600 text-white' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-                placeholder="Erzähle etwas über dich..."
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                Standort
-              </label>
-              <input
-                type="text"
-                value={profileData.location}
-                onChange={(e) => updateProfileData('location', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                  isDark 
-                    ? 'bg-slate-700 border-slate-600 text-white' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                Website
-              </label>
-              <input
-                type="url"
-                value={profileData.website}
-                onChange={(e) => updateProfileData('website', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                  isDark 
-                    ? 'bg-slate-700 border-slate-600 text-white' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <button 
-          onClick={() => setHasUnsavedChanges(false)}
-          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-blue-500/30 flex items-center justify-center space-x-2"
-        >
-          <Save className="w-5 h-5" />
-          <span>Änderungen speichern</span>
-        </button>
-      </div>
-    </>
-  );
-
-  const renderPaymentsPage = () => (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4 mb-6">
-        <button
-          onClick={() => setCurrentPage('main')}
-          className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
-        >
-          <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-        </button>
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Zahlungsmethoden
-        </h1>
-      </div>
-
-      {/* Balance */}
-      <div className={`${isDark ? 'bg-gradient-to-r from-green-900/20 to-blue-900/20 border-green-500/30' : 'bg-gradient-to-r from-green-50 to-blue-50 border-green-200'} rounded-2xl p-6 border`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Verfügbares Guthaben
-            </h3>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Bereit zur Auszahlung
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-green-500">€247.50</div>
-            <button className="text-sm text-blue-500 hover:text-blue-400 transition-colors">
-              Auszahlen
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Methods */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Zahlungsmethoden
-        </h2>
-        <div className="space-y-3">
-          {paymentMethods.map((method) => (
-            <div
-              key={method.id}
-              className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-xl p-4 border flex items-center justify-between`}
-            >
-              <div className="flex items-center space-x-4">
-                <div className={`w-12 h-8 ${method.type === 'visa' ? 'bg-blue-600' : 'bg-yellow-500'} rounded-lg flex items-center justify-center`}>
-                  <span className="text-white text-xs font-bold">
-                    {method.type === 'visa' ? 'VISA' : 'PP'}
-                  </span>
-                </div>
-                <div>
-                  <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {method.type === 'visa' ? `•••• ${method.last4}` : method.email}
-                  </p>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {method.type === 'visa' ? `Läuft ab ${method.expiry}` : 'PayPal Account'}
-                    {method.isDefault && ' • Standard'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button className={`p-2 rounded-lg ${isDark ? 'hover:bg-slate-600' : 'hover:bg-gray-200'} transition-colors`}>
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button className="p-2 rounded-lg hover:bg-red-500/20 text-red-500 transition-colors">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {/* Add Payment Method */}
-        <button className={`w-full mt-4 ${isDark ? 'bg-slate-700 border-slate-600 hover:bg-slate-600' : 'bg-gray-100 border-gray-200 hover:bg-gray-200'} border-2 border-dashed rounded-xl p-4 transition-all duration-300 hover:scale-[1.02] group`}>
-          <div className="flex items-center justify-center space-x-3">
-            <div className={`w-10 h-10 rounded-full ${isDark ? 'bg-slate-600' : 'bg-gray-200'} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-              <Plus className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-            </div>
-            <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Neue Zahlungsmethode hinzufügen
-            </span>
-          </div>
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderNotificationsPage = () => (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4 mb-6">
-        <button
-          onClick={() => setCurrentPage('main')}
-          className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
-        >
-          <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-        </button>
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Benachrichtigungen
-        </h1>
-      </div>
-
-      {/* Push Notifications */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Push-Benachrichtigungen
-        </h2>
-        <div className="space-y-4">
-          {[
-            { key: 'pushJobs', label: 'Neue Jobs', description: 'Benachrichtigung bei passenden Jobs' },
-            { key: 'pushApplications', label: 'Bewerbungen', description: 'Updates zu deinen Bewerbungen' },
-            { key: 'pushPayments', label: 'Zahlungen', description: 'Zahlungsbestätigungen und Auszahlungen' }
-          ].map((item) => (
-            <div key={item.key} className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {item.label}
-                </h3>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {item.description}
-                </p>
-              </div>
-              <button
-                onClick={() => updateNotificationSetting(item.key, !notificationSettings[item.key as keyof typeof notificationSettings])}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  notificationSettings[item.key as keyof typeof notificationSettings] ? 'bg-blue-500' : isDark ? 'bg-slate-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    notificationSettings[item.key as keyof typeof notificationSettings] ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Email Notifications */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          E-Mail Benachrichtigungen
-        </h2>
-        <div className="space-y-4">
-          {[
-            { key: 'emailNewsletter', label: 'Newsletter', description: 'Wöchentliche Updates und Tipps' },
-            { key: 'emailUpdates', label: 'Wichtige Updates', description: 'Sicherheit und Kontoinformationen' }
-          ].map((item) => (
-            <div key={item.key} className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {item.label}
-                </h3>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {item.description}
-                </p>
-              </div>
-              <button
-                onClick={() => updateNotificationSetting(item.key, !notificationSettings[item.key as keyof typeof notificationSettings])}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  notificationSettings[item.key as keyof typeof notificationSettings] ? 'bg-blue-500' : isDark ? 'bg-slate-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    notificationSettings[item.key as keyof typeof notificationSettings] ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Quiet Hours */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Ruhezeiten
-        </h2>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h3 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Ruhezeiten aktivieren
-              </h3>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Keine Benachrichtigungen während der Ruhezeiten
-              </p>
-            </div>
-            <button
-              onClick={() => updateNotificationSetting('quietHoursEnabled', !notificationSettings.quietHoursEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                notificationSettings.quietHoursEnabled ? 'bg-blue-500' : isDark ? 'bg-slate-600' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  notificationSettings.quietHoursEnabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-          
-          {notificationSettings.quietHoursEnabled && (
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Von
-                </label>
-                <input
-                  type="time"
-                  value={notificationSettings.quietStart}
-                  onChange={(e) => updateNotificationSetting('quietStart', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                    isDark 
-                      ? 'bg-slate-700 border-slate-600 text-white' 
-                      : 'bg-gray-50 border-gray-200 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-                />
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Bis
-                </label>
-                <input
-                  type="time"
-                  value={notificationSettings.quietEnd}
-                  onChange={(e) => updateNotificationSetting('quietEnd', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                    isDark 
-                      ? 'bg-slate-700 border-slate-600 text-white' 
-                      : 'bg-gray-50 border-gray-200 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-                />
+                <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Premium Upgrade
+                </h1>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Erweiterte Features freischalten
+                </p>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+          </div>
 
-  const renderHelpPage = () => (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4 mb-6">
-        <button
-          onClick={() => setCurrentPage('main')}
-          className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
-        >
-          <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-        </button>
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Hilfe & FAQ
-        </h1>
-      </div>
+          {premiumProduct && (
+            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border mb-6`}>
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Crown className="w-10 h-10 text-white" />
+                </div>
+                <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {premiumProduct.name}
+                </h2>
+                <p className={`text-lg font-bold text-orange-500 mb-4`}>
+                  19,99 €/Monat
+                </p>
+                <p className={`${isDark ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
+                  {premiumProduct.description}
+                </p>
+              </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-        <input
-          type="text"
-          placeholder="Hilfe durchsuchen..."
-          className={`w-full pl-12 pr-4 py-4 rounded-2xl border transition-colors ${
-            isDark 
-              ? 'bg-slate-800/80 border-slate-700 text-white placeholder-gray-400' 
-              : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-          } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-        />
-      </div>
+              {/* Features List */}
+              <div className="space-y-3 mb-6">
+                {[
+                  'Weniger Provision (5 %)',
+                  'Keine Auszahlungsgebühr',
+                  'Zugang zu Level 5 Jobs (ab 1.000 €)',
+                  'Unbegrenzte Job-Posts',
+                  'Priority Support',
+                  'Erweiterte Analytics',
+                  'Sichtbarer Premium-Status mit Gold-Badge'
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <div className="w-5 h-5 bg-green-500/20 rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-green-500" />
+                    </div>
+                    <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {feature}
+                    </span>
+                  </div>
+                ))}
+              </div>
 
-      {/* Quick Help */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Schnelle Hilfe
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          <button className={`p-4 rounded-xl border transition-all duration-300 hover:scale-105 ${isDark ? 'bg-slate-700/50 border-slate-600 hover:bg-slate-600/50' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
-            <Plus className={`w-6 h-6 mb-2 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
-            <h3 className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Job erstellen
-            </h3>
-          </button>
-          <button className={`p-4 rounded-xl border transition-all duration-300 hover:scale-105 ${isDark ? 'bg-slate-700/50 border-slate-600 hover:bg-slate-600/50' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
-            <CreditCard className={`w-6 h-6 mb-2 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
-            <h3 className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Zahlungen
-            </h3>
-          </button>
-        </div>
-      </div>
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 flex items-center space-x-3 mb-4">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <p className="text-red-200 text-sm">{error}</p>
+                </div>
+              )}
 
-      {/* FAQ */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Häufige Fragen
-        </h2>
-        <div className="space-y-3">
-          {faqItems.map((item, index) => (
-            <div key={index} className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-xl border overflow-hidden`}>
               <button
-                onClick={() => setExpandedFAQ(expandedFAQ === index ? null : index)}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-opacity-80 transition-colors"
+                onClick={() => handleCheckout(premiumProduct.priceId, premiumProduct.mode)}
+                disabled={checkoutLoading === premiumProduct.priceId || subscriptionStatus?.isActive}
+                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
-                <h3 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {item.question}
-                </h3>
-                {expandedFAQ === index ? (
-                  <ChevronUp className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                {checkoutLoading === premiumProduct.priceId ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Wird geladen...</span>
+                  </>
+                ) : subscriptionStatus?.isActive ? (
+                  <>
+                    <Check className="w-5 h-5" />
+                    <span>Bereits Premium</span>
+                  </>
                 ) : (
-                  <ChevronDown className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                  <>
+                    <Crown className="w-5 h-5" />
+                    <span>Jetzt upgraden</span>
+                  </>
                 )}
               </button>
-              {expandedFAQ === index && (
-                <div className="px-4 pb-4">
-                  <p className={`${isDark ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
-                    {item.answer}
-                  </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Karma Store Page
+  if (showKarmaStore) {
+    const karmaProduct = products.find(p => p.mode === 'payment');
+    
+    return (
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="px-6 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowKarmaStore(false)}
+                className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
+              >
+                <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+              </button>
+              <div>
+                <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Karma Shop
+                </h1>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Karma-Punkte kaufen
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {karmaProduct && (
+            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border mb-6`}>
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Star className="w-10 h-10 text-white" />
+                </div>
+                <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {karmaProduct.name}
+                </h2>
+                <p className={`text-lg font-bold text-purple-500 mb-4`}>
+                  2,99 €
+                </p>
+                <p className={`${isDark ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
+                  {karmaProduct.description}
+                </p>
+              </div>
+
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 flex items-center space-x-3 mb-4">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <p className="text-red-200 text-sm">{error}</p>
                 </div>
               )}
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Contact Support */}
-      <div className={`${isDark ? 'bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-500/30' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200'} rounded-2xl p-6 border`}>
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-            <MessageCircle className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1">
-            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Weitere Hilfe benötigt?
-            </h3>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Unser Support-Team hilft gerne weiter
-            </p>
-          </div>
-          <button
-            onClick={() => setCurrentPage('contact')}
-            className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
-          >
-            Kontakt
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderPrivacyPage = () => (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4 mb-6">
-        <button
-          onClick={() => setCurrentPage('main')}
-          className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
-        >
-          <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-        </button>
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Datenschutz & Sicherheit
-        </h1>
-      </div>
-
-      {/* Security Overview */}
-      <div className={`${isDark ? 'bg-gradient-to-r from-green-900/20 to-blue-900/20 border-green-500/30' : 'bg-gradient-to-r from-green-50 to-blue-50 border-green-200'} rounded-2xl p-6 border`}>
-        <div className="flex items-center space-x-4 mb-4">
-          <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
-            <Shield className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Deine Daten sind sicher
-            </h3>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              256-bit SSL Verschlüsselung • DSGVO-konform
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-green-500">100%</div>
-            <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Verschlüsselt</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-blue-500">DSGVO</div>
-            <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Konform</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-500">24/7</div>
-            <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Überwacht</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Data Categories */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Deine Daten
-        </h2>
-        <div className="space-y-4">
-          {[
-            { category: 'Profildaten', description: 'Name, E-Mail, Telefon', icon: User },
-            { category: 'Aktivitätsdaten', description: 'Jobs, Bewerbungen, Bewertungen', icon: Clock },
-            { category: 'Zahlungsdaten', description: 'Transaktionen, Auszahlungen', icon: CreditCard }
-          ].map((item, index) => (
-            <div key={index} className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-xl p-4 border flex items-center space-x-4`}>
-              <div className={`w-10 h-10 ${isDark ? 'bg-slate-600' : 'bg-gray-200'} rounded-lg flex items-center justify-center`}>
-                <item.icon className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              </div>
-              <div className="flex-1">
-                <h3 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {item.category}
-                </h3>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {item.description}
-                </p>
-              </div>
-              <button className="text-blue-500 hover:text-blue-400 text-sm font-medium">
-                Verwalten
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Privacy Controls */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Privatsphäre-Einstellungen
-        </h2>
-        <div className="space-y-4">
-          {[
-            { key: 'profileVisible', label: 'Profil öffentlich sichtbar', description: 'Andere können dein Profil sehen' },
-            { key: 'showActivity', label: 'Aktivität anzeigen', description: 'Zeige abgeschlossene Jobs und Bewertungen' },
-            { key: 'dataCollection', label: 'Datensammlung für Verbesserungen', description: 'Hilf uns, die App zu verbessern' }
-          ].map((item) => (
-            <div key={item.key} className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {item.label}
-                </h3>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {item.description}
-                </p>
-              </div>
               <button
-                onClick={() => updatePrivacySetting(item.key, !privacySettings[item.key as keyof typeof privacySettings])}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  privacySettings[item.key as keyof typeof privacySettings] ? 'bg-blue-500' : isDark ? 'bg-slate-600' : 'bg-gray-300'
-                }`}
+                onClick={() => handleCheckout(karmaProduct.priceId, karmaProduct.mode)}
+                disabled={checkoutLoading === karmaProduct.priceId}
+                className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    privacySettings[item.key as keyof typeof privacySettings] ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
+                {checkoutLoading === karmaProduct.priceId ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Wird geladen...</span>
+                  </>
+                ) : (
+                  <>
+                    <Gift className="w-5 h-5" />
+                    <span>Jetzt kaufen</span>
+                  </>
+                )}
               </button>
             </div>
-          ))}
+          )}
         </div>
       </div>
+    );
+  }
 
-      {/* Data Rights */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Deine Rechte
-        </h2>
-        <div className="space-y-3">
-          <button className={`w-full p-4 rounded-xl border transition-all duration-300 hover:scale-[1.02] text-left ${isDark ? 'bg-slate-700/50 border-slate-600 hover:bg-slate-600/50' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
-            <div className="flex items-center space-x-3">
-              <Download className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
-              <div>
-                <h3 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Daten exportieren
-                </h3>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Lade alle deine Daten herunter
-                </p>
-              </div>
-            </div>
-          </button>
-          <button className={`w-full p-4 rounded-xl border transition-all duration-300 hover:scale-[1.02] text-left ${isDark ? 'bg-slate-700/50 border-slate-600 hover:bg-slate-600/50' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
-            <div className="flex items-center space-x-3">
-              <Trash2 className="w-5 h-5 text-red-500" />
-              <div>
-                <h3 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Konto löschen
-                </h3>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Alle Daten permanent entfernen
-                </p>
-              </div>
-            </div>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderContactPage = () => (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4 mb-6">
-        <button
-          onClick={() => setCurrentPage('main')}
-          className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
-        >
-          <ArrowLeft className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-        </button>
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Kontakt & Support
-        </h1>
-      </div>
-
-      {/* Contact Options */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className={`${isDark ? 'bg-gradient-to-br from-blue-900/20 to-blue-800/20 border-blue-500/30' : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'} rounded-2xl p-6 border`}>
-          <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-4">
-            <MessageCircle className="w-6 h-6 text-white" />
-          </div>
-          <h3 className={`font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Live Chat
-          </h3>
-          <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Sofortige Hilfe von unserem Team
-          </p>
-          <button className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
-            Chat starten
-          </button>
-        </div>
-
-        <div className={`${isDark ? 'bg-gradient-to-br from-green-900/20 to-green-800/20 border-green-500/30' : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'} rounded-2xl p-6 border`}>
-          <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mb-4">
-            <Mail className="w-6 h-6 text-white" />
-          </div>
-          <h3 className={`font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            E-Mail Support
-          </h3>
-          <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Detaillierte Hilfe per E-Mail
-          </p>
-          <button className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors">
-            E-Mail senden
-          </button>
-        </div>
-      </div>
-
-      {/* Support Hours */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Support-Zeiten
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center space-x-3">
-            <Clock className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
-            <div>
-              <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Mo - Fr: 9:00 - 18:00
-              </p>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Werktags
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Clock className={`w-5 h-5 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
-            <div>
-              <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Sa: 10:00 - 16:00
-              </p>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Samstag
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className={`mt-4 p-3 rounded-lg ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
-          <p className={`text-sm ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
-            ⚡ Durchschnittliche Antwortzeit: 2-4 Stunden
-          </p>
-        </div>
-      </div>
-
-      {/* Contact Form */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Nachricht senden
-        </h2>
-        <form className="space-y-4">
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Betreff
-            </label>
-            <select
-              value={contactForm.subject}
-              onChange={(e) => setContactForm({...contactForm, subject: e.target.value})}
-              className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                isDark 
-                  ? 'bg-slate-700 border-slate-600 text-white' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-            >
-              <option value="general">Allgemeine Frage</option>
-              <option value="technical">Technisches Problem</option>
-              <option value="payment">Zahlungsproblem</option>
-              <option value="account">Konto-Problem</option>
-              <option value="feedback">Feedback</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              E-Mail Adresse
-            </label>
-            <input
-              type="email"
-              value={contactForm.email}
-              onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-              className={`w-full px-4 py-3 rounded-xl border transition-colors ${
-                isDark 
-                  ? 'bg-slate-700 border-slate-600 text-white' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Nachricht
-            </label>
-            <textarea
-              rows={5}
-              value={contactForm.message}
-              onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
-              placeholder="Beschreibe dein Anliegen so detailliert wie möglich..."
-              className={`w-full px-4 py-3 rounded-xl border transition-colors resize-none ${
-                isDark 
-                  ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-blue-500/30 flex items-center justify-center space-x-2"
-          >
-            <Mail className="w-5 h-5" />
-            <span>Nachricht senden</span>
-          </button>
-        </form>
-      </div>
-
-      {/* Additional Contact Info */}
-      <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Weitere Kontaktmöglichkeiten
-        </h2>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3">
-            <Phone className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-            <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              +49 30 12345678
-            </span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Mail className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-            <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              support@cleanwork.de
-            </span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Globe className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-            <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              www.cleanwork.de/hilfe
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'profile':
-        return renderProfilePage();
-      case 'payments':
-        return renderPaymentsPage();
-      case 'notifications':
-        return renderNotificationsPage();
-      case 'help':
-        return renderHelpPage();
-      case 'privacy':
-        return renderPrivacyPage();
-      case 'contact':
-        return renderContactPage();
-      default:
-        return renderMainMenu();
+  // Main Menu
+  const menuItems = [
+    {
+      icon: User,
+      label: 'Profil bearbeiten',
+      description: 'Persönliche Informationen',
+      onClick: () => setShowProfile(true),
+      color: 'text-blue-500'
+    },
+    {
+      icon: CreditCard,
+      label: 'Zahlungen & Abos',
+      description: subscriptionStatus?.isActive ? subscriptionStatus.productName : 'Kein aktives Abo',
+      onClick: () => setShowPayments(true),
+      color: 'text-green-500',
+      badge: subscriptionStatus?.isActive ? 'Premium' : null
+    },
+    {
+      icon: isDark ? Sun : Moon,
+      label: isDark ? 'Heller Modus' : 'Dunkler Modus',
+      description: 'Design anpassen',
+      onClick: onToggleTheme,
+      color: 'text-yellow-500'
+    },
+    {
+      icon: Bell,
+      label: 'Benachrichtigungen',
+      description: 'Push-Einstellungen',
+      onClick: () => {},
+      color: 'text-purple-500'
+    },
+    {
+      icon: Shield,
+      label: 'Datenschutz',
+      description: 'Privatsphäre-Einstellungen',
+      onClick: () => {},
+      color: 'text-indigo-500'
+    },
+    {
+      icon: HelpCircle,
+      label: 'Hilfe & Support',
+      description: 'FAQ und Kontakt',
+      onClick: () => {},
+      color: 'text-orange-500'
+    },
+    {
+      icon: FileText,
+      label: 'AGB & Datenschutz',
+      description: 'Rechtliche Informationen',
+      onClick: () => {},
+      color: 'text-gray-500'
     }
-  };
+  ];
 
   return (
     <div className="flex-1 overflow-y-auto pb-32">
       <div className="px-6 py-6">
-        {renderCurrentPage()}
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Weitere Optionen
+          </h1>
+          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Einstellungen und Verwaltung
+          </p>
+        </div>
+
+        {/* User Info Card */}
+        <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border mb-6`}>
+          <div className="flex items-center space-x-4">
+            <div className={`w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center relative`}>
+              {subscriptionStatus?.isActive && (
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <Crown className="w-3 h-3 text-white" />
+                </div>
+              )}
+              <User className="w-8 h-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {userProfile?.full_name || 'CleanWork User'}
+              </h3>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                {userProfile?.email || user?.email}
+              </p>
+              <div className="flex items-center space-x-4 mt-2">
+                <div className="flex items-center space-x-1">
+                  <Star className="w-4 h-4 text-purple-500" />
+                  <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {userProfile?.karma || 0} Karma
+                  </span>
+                </div>
+                {subscriptionStatus?.isActive && (
+                  <div className="px-2 py-1 bg-yellow-500/20 text-yellow-600 rounded-full text-xs font-medium flex items-center space-x-1">
+                    <Crown className="w-3 h-3" />
+                    <span>Premium</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Menu Items */}
+        <div className="space-y-3 mb-8">
+          {menuItems.map((item, index) => (
+            <button
+              key={index}
+              onClick={item.onClick}
+              className={`w-full ${isDark ? 'bg-slate-800/80 border-slate-700 hover:bg-slate-700/80' : 'bg-white border-gray-200 hover:bg-gray-50'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] group`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-10 h-10 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-gray-100'} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                    <item.icon className={`w-5 h-5 ${item.color}`} />
+                  </div>
+                  <div className="text-left">
+                    <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {item.label}
+                    </h4>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {item.badge && (
+                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-600 rounded-full text-xs font-medium">
+                      {item.badge}
+                    </span>
+                  )}
+                  <ChevronRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'} group-hover:translate-x-1 transition-transform duration-300`} />
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Sign Out Button */}
+        <button
+          onClick={handleSignOut}
+          className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-red-500/30 flex items-center justify-center space-x-2"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Abmelden</span>
+        </button>
       </div>
     </div>
   );
