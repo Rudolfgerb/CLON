@@ -27,6 +27,147 @@ async function ensureCustomer(userId: string, email?: string): Promise<string> {
   return customerId;
 }
 
+// Lesson management endpoints
+app.post('/api/lessons', async (req, res) => {
+  try {
+    const { title, description, content, creator_id, is_published, difficulty_level, estimated_duration } = req.body;
+    const { rows } = await pool.query(
+      `INSERT INTO lessons (title, description, content, creator_id, is_published, difficulty_level, estimated_duration)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [title, description, content, creator_id, is_published, difficulty_level, estimated_duration],
+    );
+    res.json(rows[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/lessons/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, content, is_published, difficulty_level, estimated_duration, user_id } = req.body;
+    const { rows: creator } = await pool.query('SELECT creator_id FROM lessons WHERE id=$1', [id]);
+    if (!creator[0] || creator[0].creator_id !== user_id) return res.status(403).json({ error: 'Forbidden' });
+    const { rows } = await pool.query(
+      `UPDATE lessons SET title=$1, description=$2, content=$3, is_published=$4, difficulty_level=$5, estimated_duration=$6, updated_at=NOW() WHERE id=$7 RETURNING *`,
+      [title, description, content, is_published, difficulty_level, estimated_duration, id],
+    );
+    res.json(rows[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/lessons/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_id } = req.body;
+    const { rows: creator } = await pool.query('SELECT creator_id FROM lessons WHERE id=$1', [id]);
+    if (!creator[0] || creator[0].creator_id !== user_id) return res.status(403).json({ error: 'Forbidden' });
+    await pool.query('DELETE FROM lessons WHERE id=$1', [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/lessons', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT l.*, COALESCE(c.count,0) AS completions, COALESCE(r.avg_rating,0) AS avg_rating
+      FROM lessons l
+      LEFT JOIN (
+        SELECT lesson_id, COUNT(*) AS count FROM lesson_completions GROUP BY lesson_id
+      ) c ON c.lesson_id = l.id
+      LEFT JOIN (
+        SELECT lesson_id, AVG(rating)::float AS avg_rating FROM lesson_ratings GROUP BY lesson_id
+      ) r ON r.lesson_id = l.id
+      WHERE l.is_published = true
+      ORDER BY l.created_at DESC
+    `);
+    res.json(rows);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/lessons/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(
+      `SELECT l.*, COALESCE(c.count,0) AS completions, COALESCE(r.avg_rating,0) AS avg_rating
+       FROM lessons l
+       LEFT JOIN (
+         SELECT lesson_id, COUNT(*) AS count FROM lesson_completions GROUP BY lesson_id
+       ) c ON c.lesson_id = l.id
+       LEFT JOIN (
+         SELECT lesson_id, AVG(rating)::float AS avg_rating FROM lesson_ratings GROUP BY lesson_id
+       ) r ON r.lesson_id = l.id
+       WHERE l.id=$1`,
+      [id],
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(rows[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/lessons/:id/complete', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_id, score } = req.body;
+    const { rows: existing } = await pool.query('SELECT 1 FROM lesson_completions WHERE lesson_id=$1 AND user_id=$2', [id, user_id]);
+    if (existing[0]) return res.status(400).json({ error: 'Already completed' });
+    await pool.query('INSERT INTO lesson_completions (lesson_id, user_id, score) VALUES ($1,$2,$3)', [id, user_id, score]);
+    const { rows: creator } = await pool.query('SELECT creator_id FROM lessons WHERE id=$1', [id]);
+    if (creator[0]) {
+      await pool.query('UPDATE users SET karma = COALESCE(karma,0) + 10 WHERE id=$1', [creator[0].creator_id]);
+    }
+    await pool.query('UPDATE users SET karma = COALESCE(karma,0) + 5 WHERE id=$1', [user_id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/lessons/:id/completion-stats', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(
+      'SELECT COUNT(*) AS completions, AVG(score)::float AS average_score FROM lesson_completions WHERE lesson_id=$1',
+      [id],
+    );
+    res.json(rows[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/lessons/:id/rate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_id, rating, review } = req.body;
+    await pool.query(
+      `INSERT INTO lesson_ratings (lesson_id, user_id, rating, review)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (lesson_id, user_id) DO UPDATE SET rating=$3, review=$4, created_at=NOW()`,
+      [id, user_id, rating, review],
+    );
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/premium/create-checkout-session', async (req, res) => {
   try {
     const { userId, success_url, cancel_url } = req.body;
