@@ -114,16 +114,21 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     setError('');
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: window.location.origin,
+          skipBrowserRedirect: true
         }
       });
 
       if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
     } catch (error: any) {
       setError(error.message || 'Google Login fehlgeschlagen');
+    } finally {
       setLoading(false);
     }
   };
