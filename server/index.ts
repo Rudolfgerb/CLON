@@ -30,7 +30,7 @@ async function ensureCustomer(userId: string, email?: string): Promise<string> {
 // Lesson management endpoints
 app.post('/api/lessons', async (req, res) => {
   try {
-    const { title, description, content, creator_id, is_published, difficulty_level, estimated_duration } = req.body;
+    const { title, description, content, creator_id, is_published = true, difficulty_level, estimated_duration } = req.body;
     const { rows } = await pool.query(
       `INSERT INTO lessons (title, description, content, creator_id, is_published, difficulty_level, estimated_duration)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
