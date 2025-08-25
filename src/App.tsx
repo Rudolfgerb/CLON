@@ -617,10 +617,10 @@ function App() {
                 onClick={() => setActiveTab(item.id)}
                 className={`relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 ${
                   item.isCenter
-                    ? `w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/50 ${
+                    ? `w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/50 ${
                         activeTab === item.id ? 'scale-105 shadow-xl shadow-blue-500/30' : ''
                       }`
-                    : `w-12 h-12 ${
+                    : `w-16 h-16 ${
                         activeTab === item.id
                           ? `${isDark ? 'bg-slate-700 text-blue-400' : 'bg-blue-50 text-blue-600'} scale-110 shadow-lg`
                           : `${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} hover:scale-105`
@@ -630,9 +630,9 @@ function App() {
                 {item.isCenter && (
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000 rounded-2xl"></div>
                 )}
-                <item.icon className={`${item.isCenter ? 'w-8 h-8' : 'w-6 h-6'} relative z-10 transition-transform duration-300`} />
+                <item.icon className={`${item.isCenter ? 'w-10 h-10' : 'w-8 h-8'} relative z-10 transition-transform duration-300`} />
                 {!item.isCenter && (
-                  <span className={`text-xs mt-1 relative z-10 transition-all duration-300 ${
+                  <span className={`text-sm mt-1 relative z-10 transition-all duration-300 font-medium ${
                     activeTab === item.id ? 'opacity-100 font-medium' : 'opacity-70'
                   }`}>
                     {item.label}
