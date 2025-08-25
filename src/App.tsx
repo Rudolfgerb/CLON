@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
 import { Home, Briefcase, Plus, GraduationCap, MoreHorizontal, User, Euro, Code, BookOpen, Star, ArrowRight, Moon, Sun } from 'lucide-react';
-import NotificationBell from './components/NotificationBell';
 import JobsPage from './components/JobsPage';
 import CampusPage from './components/CampusPage';
 import MoreMenu from './components/MoreMenu';
 import AuthPage from './components/AuthPage';
 import CreateCashJobPage from './components/CreateCashJobPage';
 import CreateKarmaJobPage from './components/CreateKarmaJobPage';
-import NotificationsPage from './components/NotificationsPage';
-import GameNotificationSystem from './components/GameNotificationSystem';
 import SuccessPage from './components/SuccessPage';
 import CancelPage from './components/CancelPage';
 
@@ -22,8 +19,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showCreateCashJob, setShowCreateCashJob] = useState(false);
   const [showCreateKarmaJob, setShowCreateKarmaJob] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [gameNotifications, setGameNotifications] = useState<any[]>([]);
   const [showActivityDetails, setShowActivityDetails] = useState(false);
   const [showSuccessPage, setShowSuccessPage] = useState(false);
   const [showCancelPage, setShowCancelPage] = useState(false);
@@ -38,17 +33,6 @@ function App() {
   const [todayKarmaEarned, setTodayKarmaEarned] = useState(0);
   const [hasActiveJobs, setHasActiveJobs] = useState(false);
   const [completedJobsToday, setCompletedJobsToday] = useState(0);
-
-  // Notification-specific states for blinking control
-  const [notificationStates, setNotificationStates] = useState({
-    newJobs: false,
-    newApplications: false,
-    karmaEarned: false,
-    profileIncomplete: false,
-    friendInvites: false,
-    achievements: false,
-    campusUpdates: false
-  });
 
   useEffect(() => {
     // Check for success/cancel parameters in URL
@@ -88,14 +72,6 @@ function App() {
     };
   }, [user]);
 
-  useEffect(() => {
-    const handleNavigateToNotifications = () => setShowNotifications(true);
-    window.addEventListener('navigateToNotifications', handleNavigateToNotifications);
-    return () => {
-      window.removeEventListener('navigateToNotifications', handleNavigateToNotifications);
-    };
-  }, []);
-
   // Load real user data
   const loadUserData = async (userId: string) => {
     try {
@@ -129,23 +105,6 @@ function App() {
 
       if (jobsError) throw jobsError;
       setNewJobsCount(newJobs?.length || 0);
-      
-      // Create notification for new jobs if there are any
-      if (newJobs && newJobs.length > 0 && !notificationStates.newJobs) {
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: userId,
-            type: 'new_job',
-            title: `${newJobs.length} neue Jobs verfügbar`,
-            message: 'Entdecke neue Verdienstmöglichkeiten',
-            data: { job_count: newJobs.length }
-          });
-        
-        if (!notificationError) {
-          setNotificationStates(prev => ({ ...prev, newJobs: true }));
-        }
-      }
       
       // Load user's active jobs
       const { data: activeJobs, error: activeError } = await supabase
@@ -204,143 +163,10 @@ function App() {
       
       setProfileNeedsUpdate(needsUpdate);
       
-      // Create notification if profile is incomplete
-      if (needsUpdate && !notificationStates.profileIncomplete) {
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: userId,
-            type: 'profile_incomplete',
-            title: 'Profil vervollständigen',
-            message: 'Vervollständige dein Profil für bessere Job-Chancen',
-            data: { action: 'complete_profile' }
-          });
-        
-        if (!notificationError) {
-          setNotificationStates(prev => ({ ...prev, profileIncomplete: true }));
-        }
-      }
     } catch (error) {
       console.error('Error checking profile:', error);
     }
   };
-
-  // Real gamification triggers
-  useEffect(() => {
-    // Only show notifications based on real events
-    if (user) {
-      // Check for achievements based on real data
-      checkForAchievements();
-      
-      // Set up periodic data refresh (every 60 seconds to avoid rate limits)
-      const refreshTimer = setInterval(() => {
-        loadUserData(user.id);
-      }, 60000);
-
-      return () => clearInterval(refreshTimer);
-    }
-  }, [user, completedJobsToday, karmaPoints, dailyStreak]);
-
-  const checkForAchievements = () => {
-    // Streak achievement
-    if (dailyStreak > 0 && dailyStreak % 7 === 0) {
-      // Create notification for streak achievement
-      if (user && !notificationStates.achievements) {
-        const insertNotification = async () => {
-          const { error } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: user.id,
-            type: 'achievement',
-            title: '🔥 Streak Milestone erreicht!',
-            message: `${dailyStreak} Tage in Folge aktiv!`,
-            data: { achievement_type: 'streak', streak_days: dailyStreak }
-          });
-          
-          if (!error) {
-            setNotificationStates(prev => ({ ...prev, achievements: true }));
-          }
-        };
-        insertNotification();
-      }
-      
-      addGameNotification({
-        type: 'streak',
-        title: '🔥 Streak Milestone!',
-        message: `${dailyStreak} Tage in Folge aktiv!`,
-        color: 'from-red-500 to-orange-500'
-      });
-    }
-    
-    // Karma milestones
-    if (todayKarmaEarned >= 100) {
-      // Create notification for karma milestone
-      if (user && !notificationStates.karmaEarned) {
-        const insertNotification = async () => {
-          const { error } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: user.id,
-            type: 'karma_earned',
-            title: '⭐ Karma Master!',
-            message: `+${todayKarmaEarned} Karma heute verdient!`,
-            data: { karma_earned: todayKarmaEarned }
-          });
-          
-          if (!error) {
-            setNotificationStates(prev => ({ ...prev, karmaEarned: true }));
-          }
-        };
-        insertNotification();
-      }
-      
-      addGameNotification({
-        type: 'karma',
-        title: '⭐ Karma Master!',
-        message: `+${todayKarmaEarned} Karma heute verdient!`,
-        color: 'from-purple-500 to-pink-500'
-      });
-    }
-    
-    // Job completion achievements
-    if (completedJobsToday >= 3) {
-      // Create notification for productivity achievement
-      if (user && !notificationStates.achievements) {
-        const insertNotification = async () => {
-          const { error } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: user.id,
-            type: 'achievement',
-            title: '🏆 Produktivitäts-Champion!',
-            message: `${completedJobsToday} Jobs heute abgeschlossen!`,
-            data: { achievement_type: 'productivity', jobs_completed: completedJobsToday }
-          });
-          
-          if (!error) {
-            setNotificationStates(prev => ({ ...prev, achievements: true }));
-          }
-        };
-        insertNotification();
-      }
-      
-      addGameNotification({
-        type: 'achievement',
-        title: '🏆 Produktivitäts-Champion!',
-        message: `${completedJobsToday} Jobs heute abgeschlossen!`,
-        color: 'from-yellow-500 to-orange-500'
-      });
-    }
-  };
-
-  const addGameNotification = (notification: any) => {
-    const newNotification = { ...notification, id: Date.now() };
-    setGameNotifications(prev => [...prev, newNotification]);
-  };
-
-  const removeGameNotification = useCallback((id: number) => {
-    setGameNotifications(prev => prev.filter(notif => notif.id !== id));
-  }, []);
 
   const loadUserProfile = async (userId: string) => {
     try {
@@ -630,23 +456,12 @@ function App() {
             {/* Welcome Back Section */}
             <div className="px-6 py-4">
               <div className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-6 border transition-all duration-500 hover:scale-[1.02] transform relative overflow-hidden`}>
-                {/* Show notification dot only if there are real updates */}
-                {(newApplicationsCount > 0 || completedJobsToday > 0) && (
-                  <>
-                    <div className="absolute top-4 right-4 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
-                    <div className="absolute top-4 right-4 w-3 h-3 bg-green-500 rounded-full"></div>
-                  </>
-                )}
-                
                 <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>Willkommen zurück!</h2>
                 <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-4 transition-colors duration-500`}>Bereit für neue Herausforderungen?</p>
                 
                 <div className="grid grid-cols-3 gap-4">
                   {stats.map((stat, index) => (
                     <div key={index} className="text-center relative">
-                      {index === 2 && todayKarmaEarned > 0 && ( // Only show if karma was earned today
-                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-                      )}
                       <div className={`text-2xl font-bold ${stat.color} transition-colors duration-500`}>{stat.value}</div>
                       <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} transition-colors duration-500`}>{stat.label}</div>
                     </div>
@@ -662,26 +477,19 @@ function App() {
                 <button 
                   onClick={() => {
                     setActiveTab('jobs');
-                    // Small delay to ensure tab is active before setting filter
                     setTimeout(() => {
                       const event = new CustomEvent('setJobFilter', { detail: 'cash' });
                       window.dispatchEvent(event);
                     }, 100);
                   }}
-                  className={`group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/25 ${notificationStates.newJobs ? 'animate-pulse' : ''}`}
+                  className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/25"
                 >
-                  {/* Notification badge - only show if there are new jobs */}
-                  {notificationStates.newJobs && (
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold animate-bounce">
-                      {newJobsCount}
-                    </div>
-                  )}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <Euro className="w-8 h-8 mb-3 relative z-10" />
                   <div className="text-left relative z-10">
                     <div className="font-bold text-lg">Cash Jobs</div>
                     <div className="text-sm opacity-90">
-                      {notificationStates.newJobs ? `${newJobsCount} neue Jobs!` : 'Verfügbare Jobs'}
+                      Verfügbare Jobs
                     </div>
                   </div>
                 </button>
@@ -689,25 +497,19 @@ function App() {
                 <button 
                   onClick={() => {
                     setActiveTab('jobs');
-                    // Small delay to ensure tab is active before setting filter
                     setTimeout(() => {
-                      // This will be handled by JobsPage component
                       const event = new CustomEvent('setJobFilter', { detail: 'karma' });
                       window.dispatchEvent(event);
                     }, 100);
                   }}
-                  className={`group relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/25 ${notificationStates.karmaEarned ? 'ring-2 ring-orange-300 animate-pulse' : ''}`}
+                  className="group relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/25"
                 >
-                  {/* Pulsing ring effect - only if karma was earned today */}
-                  {notificationStates.karmaEarned && (
-                    <div className="absolute inset-0 rounded-2xl border-2 border-orange-300 animate-ping opacity-30"></div>
-                  )}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <Star className="w-8 h-8 mb-3 relative z-10" />
                   <div className="text-left relative z-10">
                     <div className="font-bold text-lg">Karma Jobs</div>
                     <div className="text-sm opacity-90">
-                      {notificationStates.karmaEarned ? `+${todayKarmaEarned} heute verdient!` : 'Karma sammeln'}
+                      Karma sammeln
                     </div>
                   </div>
                 </button>
@@ -727,14 +529,7 @@ function App() {
               </div>
               <div className="space-y-3">
                 {activities.map((activity, index) => (
-                  <div key={index} className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group cursor-pointer relative overflow-hidden ${index === 0 && completedJobsToday > 0 ? 'ring-2 ring-green-500/50 animate-pulse' : ''}`}>
-                    {index === 0 && completedJobsToday > 0 && (
-                      <>
-                        <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
-                        <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent"></div>
-                      </>
-                    )}
+                  <div key={index} className={`${isDark ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group cursor-pointer relative overflow-hidden`}>
                     <div className="flex items-center space-x-4">
                       <div className={`w-12 h-12 ${activity.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
                         <activity.icon className="w-6 h-6 text-white" />
@@ -745,7 +540,7 @@ function App() {
                       </div>
                       <div className="text-right">
                         <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`}>{activity.time}</p>
-                        <p className={`text-sm font-medium ${index === 0 && completedJobsToday > 0 ? 'text-green-400 animate-pulse' : 'text-green-400'}`}>{activity.karma}</p>
+                        <p className="text-sm font-medium text-green-400">{activity.karma}</p>
                       </div>
                       <ArrowRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'} group-hover:translate-x-1 transition-transform duration-300`} />
                     </div>
@@ -753,26 +548,6 @@ function App() {
                 ))}
               </div>
               
-              {/* Achievement Teaser - Only show if close to achievement */}
-              {completedJobsToday >= 1 && completedJobsToday < 3 && (
-                <div className={`mt-6 ${isDark ? 'bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-purple-500/30' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200'} rounded-2xl p-4 border relative overflow-hidden`}>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
-                  <div className="flex items-center space-x-4 relative z-10">
-                    <div className="text-3xl animate-bounce">🏆</div>
-                    <div className="flex-1">
-                      <h4 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        Nächster Erfolg: Produktivitäts-Champion
-                      </h4>
-                      <p className={`text-sm ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
-                        Noch {3 - completedJobsToday} Jobs bis zum Erfolg!
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
-                      <div className="text-purple-500 font-bold">{completedJobsToday}/3</div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </>
         );
@@ -788,18 +563,13 @@ function App() {
             <button
               onClick={() => {
                 setActiveTab('more');
-                // Small delay to ensure tab is active before navigating to profile
                 setTimeout(() => {
                   const event = new CustomEvent('navigateToProfile');
                   window.dispatchEvent(event);
                 }, 100);
               }}
-              className={`w-10 h-10 rounded-full ${isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-500 hover:bg-blue-600'} flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer relative`}
+              className={`w-10 h-10 rounded-full ${isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-500 hover:bg-blue-600'} flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer`}
             >
-              {/* Profile update notification - only if profile needs update */}
-              {notificationStates.profileIncomplete && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-bounce"></div>
-              )}
               <User className="w-5 h-5 text-white" />
             </button>
             <div>
@@ -807,7 +577,7 @@ function App() {
                 {userProfile?.full_name || 'Mutuus'}
               </h1>
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`}>
-                Karma: {karmaPoints} Punkte {todayKarmaEarned > 0 ? `(+${todayKarmaEarned} heute!)` : ''}
+                Karma: {karmaPoints} Punkte
               </p>
             </div>
           </div>
@@ -815,9 +585,7 @@ function App() {
             <button
               onClick={() => {
                 setActiveTab('more');
-                // Small delay to ensure tab is active before navigating to payments
                 setTimeout(() => {
-                  // This will be handled by MoreMenu component
                   const event = new CustomEvent('navigateToPayments');
                   window.dispatchEvent(event);
                 }, 100);
@@ -826,7 +594,6 @@ function App() {
             >
               €{totalEarnings}
             </button>
-            <NotificationBell onClick={() => setShowNotifications(true)} />
             <button
               onClick={() => setIsDark(!isDark)}
               className={`p-2 rounded-full ${isDark ? 'bg-slate-700 text-yellow-400' : 'bg-gray-200 text-gray-700'} hover:scale-110 transition-all duration-300`}
@@ -838,21 +605,7 @@ function App() {
       </div>
 
       {/* Main Content */}
-      {showNotifications ? (
-        <NotificationsPage 
-          isDark={isDark} 
-          onBack={() => setShowNotifications(false)} 
-        />
-      ) : (
-        renderContent()
-      )}
-
-      {/* Game Notification System */}
-      <GameNotificationSystem 
-        notifications={gameNotifications}
-        onRemove={removeGameNotification}
-        isDark={isDark}
-      />
+      {renderContent()}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
@@ -874,13 +627,6 @@ function App() {
                       }`
                 }`}
               >
-                {/* Special notifications for specific tabs - only show if there's real data */}
-                {item.id === 'jobs' && notificationStates.newJobs && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
-                )}
-                {item.id === 'campus' && notificationStates.campusUpdates && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-bounce"></div>
-                )}
                 {item.isCenter && (
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000 rounded-2xl"></div>
                 )}

@@ -29,11 +29,10 @@ interface Job {
 
 interface JobsPageProps {
   isDark: boolean;
-  onShowNotifications: () => void;
   user: any;
 }
 
-const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }) => {
+const JobsPage: React.FC<JobsPageProps> = ({ isDark, user }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -276,30 +275,6 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, onShowNotifications, user }
 
       if (applicationError) throw applicationError;
       if (!application) throw new Error('Application creation failed');
-
-      // Create notification for job creator
-      const notificationPayload = {
-        user_id: selectedJob.created_by,
-        type: 'new_application',
-        title: 'Neue Bewerbung erhalten',
-        message: `${applicationData.message.substring(0, 100)}...`,
-        data: {
-          job_id: selectedJob.id,
-          job_title: selectedJob.title,
-          application_id: application.id,
-          applicant_name: currentUser?.user_metadata?.full_name || 'Bewerber',
-          hourly_rate: applicationData.hourlyRate
-        },
-        read: false
-      };
-
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert(notificationPayload);
-
-      if (notificationError) {
-        console.error('Notification creation failed:', notificationError);
-      }
 
       setApplicationSuccess('Bewerbung erfolgreich gesendet!');
       setTimeout(closeApplicationModal, 2000);

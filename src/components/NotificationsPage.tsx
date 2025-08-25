@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useNotifications } from './NotificationProvider';
 import { 
   Bell, 
   Check, 
@@ -36,7 +35,6 @@ interface Application {
 }
 
 const NotificationsPage: React.FC<NotificationsPageProps> = ({ isDark, onBack }) => {
-  const { notifications, markAsRead } = useNotifications();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -102,21 +100,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ isDark, onBack })
       // Create notification for applicant
       const application = applications.find(app => app.id === applicationId);
       if (application) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: application.applicant_id,
-            type: 'application_status',
-            title: action === 'accepted' ? 'Bewerbung angenommen!' : 'Bewerbung abgelehnt',
-            message: action === 'accepted' 
-              ? 'Ihre Bewerbung wurde angenommen. Der Auftraggeber wird sich bei Ihnen melden.'
-              : 'Ihre Bewerbung wurde leider abgelehnt.',
-            data: {
-              job_id: application.job_id,
-              application_id: applicationId,
-              status: action
-            }
-          });
+        // Application status updated successfully
       }
 
     } catch (error) {
@@ -188,11 +172,6 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ isDark, onBack })
           </div>
           <div className="flex items-center space-x-2">
             <Bell className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-            {notifications.filter(n => !n.read).length > 0 && (
-              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                {notifications.filter(n => !n.read).length}
-              </span>
-            )}
           </div>
         </div>
 
@@ -337,56 +316,15 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ isDark, onBack })
         {/* General Notifications */}
         <div>
           <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Alle Benachrichtigungen ({notifications.length})
+            Alle Benachrichtigungen (0)
           </h2>
           
-          {notifications.length === 0 ? (
-            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-8 border text-center`}>
-              <Bell className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-              <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Keine Benachrichtigungen vorhanden
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
-                  className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border transition-all duration-300 hover:scale-[1.02] cursor-pointer ${
-                    !notification.read ? 'ring-2 ring-blue-500/30' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      <div className={`w-10 h-10 rounded-full ${
-                        notification.type === 'new_application' ? 'bg-blue-500' : 'bg-purple-500'
-                      } flex items-center justify-center`}>
-                        <Bell className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {notification.title}
-                        </h4>
-                        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
-                          {notification.message}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {!notification.read && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      )}
-                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {formatTimeAgo(notification.created_at)}
-                      </span>
-                      <ChevronRight className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-8 border text-center`}>
+            <Bell className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Keine Benachrichtigungen vorhanden
+            </p>
+          </div>
         </div>
       </div>
     </div>
