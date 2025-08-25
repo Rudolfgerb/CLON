@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   User,
-  Settings,
   CreditCard,
   HelpCircle,
-  LogOut, 
-  Moon, 
-  Sun, 
+  LogOut,
+  Moon,
+  Sun,
   Bell,
   Shield,
   FileText,
   Star,
   Crown,
-  Zap,
   Euro,
   Gift,
   ChevronRight,
@@ -24,6 +22,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { products, getProductByPriceId } from '../stripe-config';
 import ProfileForm, { ProfileData } from './ProfileForm';
+import KarmaExchange from './KarmaExchange';
 
 interface MoreMenuProps {
   isDark: boolean;
@@ -46,6 +45,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [showPayments, setShowPayments] = useState(false);
   const [showPremium, setShowPremium] = useState(false);
   const [showKarmaStore, setShowKarmaStore] = useState(false);
+  const [showKarmaExchange, setShowKarmaExchange] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -353,7 +353,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
                 <div className="text-sm opacity-90">Upgrade jetzt</div>
               </div>
             </button>
-            
+
             <button
               onClick={() => setShowKarmaStore(true)}
               className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/30"
@@ -363,6 +363,18 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
               <div className="text-left relative z-10">
                 <div className="font-bold text-lg">Karma Shop</div>
                 <div className="text-sm opacity-90">Punkte kaufen</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setShowKarmaExchange(true)}
+              className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/30"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              <Euro className="w-8 h-8 mb-3 relative z-10" />
+              <div className="text-left relative z-10">
+                <div className="font-bold text-lg">Karma auszahlen</div>
+                <div className="text-sm opacity-90">Karma in €</div>
               </div>
             </button>
           </div>
@@ -546,6 +558,17 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
     );
   }
 
+  // Karma Exchange Page
+  if (showKarmaExchange) {
+    return (
+      <KarmaExchange
+        isDark={isDark}
+        userId={user?.id || ''}
+        onClose={() => setShowKarmaExchange(false)}
+      />
+    );
+  }
+
   // Main Menu
   const menuItems = [
     {
@@ -574,7 +597,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
       icon: Bell,
       label: 'Benachrichtigungen',
       description: 'Push-Einstellungen',
-      onClick: () => {},
+      onClick: () => window.dispatchEvent(new Event('navigateToNotifications')),
       color: 'text-purple-500'
     },
     {

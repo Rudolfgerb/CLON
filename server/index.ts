@@ -208,6 +208,53 @@ app.post('/api/karma/create-checkout-session', async (req, res) => {
   }
 });
 
+app.post('/api/karma/exchange', async (req, res) => {
+  try {
+    const { userId, type, amount } = req.body as { userId: string; type: 'karma_to_money' | 'money_to_karma'; amount: number };
+    const exchangeRate = 100; // 100 karma = 1 euro
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      if (type === 'karma_to_money') {
+        const { rows: userRows } = await client.query('SELECT karma FROM users WHERE id=$1', [userId]);
+        const currentKarma = Number(userRows[0]?.karma || 0);
+        if (currentKarma < amount) throw new Error('Nicht genug Karma');
+        const euros = amount / exchangeRate;
+        await client.query('UPDATE users SET karma = karma - $1 WHERE id=$2', [amount, userId]);
+        await client.query('UPDATE user_wallets SET balance_euros = balance_euros + $1 WHERE user_id=$2', [euros, userId]);
+        await client.query(
+          `INSERT INTO karma_transactions (user_id, transaction_type, karma_amount, money_amount, exchange_rate, status, description, completed_at) VALUES ($1,'karma_to_money',$2,$3,$4,'completed','Karma zu Geld',now())`,
+          [userId, amount, euros, exchangeRate]
+        );
+      } else if (type === 'money_to_karma') {
+        const euros = amount;
+        const karma = amount * exchangeRate;
+        const { rows: walletRows } = await client.query('SELECT balance_euros FROM user_wallets WHERE user_id=$1', [userId]);
+        const balance = Number(walletRows[0]?.balance_euros || 0);
+        if (balance < euros) throw new Error('Nicht genug Guthaben');
+        await client.query('UPDATE user_wallets SET balance_euros = balance_euros - $1 WHERE user_id=$2', [euros, userId]);
+        await client.query('UPDATE users SET karma = karma + $1 WHERE id=$2', [karma, userId]);
+        await client.query(
+          `INSERT INTO karma_transactions (user_id, transaction_type, karma_amount, money_amount, exchange_rate, status, description, completed_at) VALUES ($1,'money_to_karma',$2,$3,$4,'completed','Geld zu Karma',now())`,
+          [userId, karma, euros, exchangeRate]
+        );
+      } else {
+        throw new Error('Ungültiger Typ');
+      }
+      await client.query('COMMIT');
+      res.json({ success: true });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event: Stripe.Event;
