@@ -17,6 +17,55 @@
     - Karma rewards are balanced for engagement
 */
 
+-- Ensure system user exists for seeding jobs
+INSERT INTO auth.users (
+  id,
+  instance_id,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  created_at,
+  updated_at,
+  raw_app_meta_data,
+  raw_user_meta_data
+)
+VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  '00000000-0000-0000-0000-000000000000',
+  'system@mutuus.com',
+  '',
+  now(),
+  now(),
+  now(),
+  '{}'::jsonb,
+  '{}'::jsonb
+)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.profiles (
+  id,
+  email,
+  full_name,
+  karma,
+  level,
+  premium,
+  login_streak,
+  created_at,
+  updated_at
+)
+VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  'system@mutuus.com',
+  'System',
+  0,
+  1,
+  false,
+  0,
+  now(),
+  now()
+)
+ON CONFLICT (id) DO NOTHING;
+
 -- Create basic karma jobs that enhance user experience
 INSERT INTO jobs (
   id,
