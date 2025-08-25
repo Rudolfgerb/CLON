@@ -3,13 +3,13 @@ import {
   User,
   Mail,
   Link as LinkIcon,
-  Image,
   AtSign,
   FileText,
   Check,
   AlertCircle,
   Loader2
 } from 'lucide-react';
+import AvatarUpload from './AvatarUpload';
 
 export interface ProfileData {
   full_name: string;
@@ -29,6 +29,7 @@ interface ProfileFormProps {
   onSubmit: (e: React.FormEvent) => void;
   error: string;
   success: string;
+  userId: string;
 }
 
 const ProfileForm: React.FC<ProfileFormProps> = ({
@@ -38,7 +39,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
   loading,
   onSubmit,
   error,
-  success
+  success,
+  userId
 }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
@@ -171,25 +173,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Profilbild URL
-            </label>
-            <div className="relative">
-              <Image className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-              <input
-                type="url"
-                value={profileData.avatar_url}
-                onChange={(e) => setProfileData(prev => ({ ...prev, avatar_url: e.target.value }))}
-                className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
-                  isDark
-                    ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400'
-                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-                placeholder="https://example.com/bild.jpg"
-              />
-            </div>
-          </div>
+          <AvatarUpload
+            userId={userId}
+            isDark={isDark}
+            avatarUrl={profileData.avatar_url}
+            onUpload={(url) => setProfileData(prev => ({ ...prev, avatar_url: url }))}
+          />
         </div>
       </div>
 
