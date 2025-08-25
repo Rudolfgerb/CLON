@@ -211,7 +211,7 @@ app.post('/api/karma/create-checkout-session', async (req, res) => {
 app.post('/api/karma/exchange', async (req, res) => {
   try {
     const { userId, type, amount } = req.body as { userId: string; type: 'karma_to_money' | 'money_to_karma'; amount: number };
-    const exchangeRate = 100; // 100 karma = 1 euro
+    const exchangeRate = 1000; // 1000 karma = 1 euro
     const client = await pool.connect();
     try {
       await client.query('BEGIN');

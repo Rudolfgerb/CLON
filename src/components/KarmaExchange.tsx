@@ -12,7 +12,7 @@ const KarmaExchange: React.FC<KarmaExchangeProps> = ({ isDark, userId, onClose }
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const exchangeRate = 100; // 100 Karma = 1 Euro
+  const exchangeRate = 1000; // 1000 Karma = 1 Euro</parameter>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
