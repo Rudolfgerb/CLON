@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
-import { Home, Briefcase, Plus, GraduationCap, MoreHorizontal, User, Bell, Euro, Code, BookOpen, Star, ArrowRight, Moon, Sun } from 'lucide-react';
+import { Home, Briefcase, Plus, GraduationCap, MoreHorizontal, User, Euro, Code, BookOpen, Star, ArrowRight, Moon, Sun } from 'lucide-react';
+import NotificationBell from './components/NotificationBell';
 import JobsPage from './components/JobsPage';
 import CampusPage from './components/CampusPage';
 import MoreMenu from './components/MoreMenu';
@@ -28,7 +29,6 @@ function App() {
   const [showCancelPage, setShowCancelPage] = useState(false);
   
   // Real data states
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [dailyStreak, setDailyStreak] = useState(0);
   const [karmaPoints, setKarmaPoints] = useState(0);
   const [totalEarnings, setTotalEarnings] = useState(0);
@@ -83,17 +83,8 @@ function App() {
       }
     });
 
-    // Listen for notification read events
-    const handleNotificationRead = () => {
-      if (user) {
-        loadNotifications(user.id);
-      }
-    };
-
-    window.addEventListener('notificationRead', handleNotificationRead);
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('notificationRead', handleNotificationRead);
     };
   }, [user]);
 
@@ -102,9 +93,6 @@ function App() {
     try {
       // Load user profile
       await loadUserProfile(userId);
-      
-      // Load notifications
-      await loadNotifications(userId);
       
       // Load jobs data
       await loadJobsData(userId);
@@ -117,60 +105,6 @@ function App() {
       
     } catch (error) {
       console.error('Error loading user data:', error);
-    }
-  };
-
-  const loadNotifications = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('read', false);
-
-      if (error) throw error;
-      setUnreadNotifications(data?.length || 0);
-      
-      // Update notification states based on actual notifications
-      const states = {
-        newJobs: false,
-        newApplications: false,
-        karmaEarned: false,
-        profileIncomplete: false,
-        friendInvites: false,
-        achievements: false,
-        campusUpdates: false
-      };
-      
-      data?.forEach(notification => {
-        switch (notification.type) {
-          case 'new_job':
-            states.newJobs = true;
-            break;
-          case 'new_application':
-            states.newApplications = true;
-            break;
-          case 'karma_earned':
-            states.karmaEarned = true;
-            break;
-          case 'profile_incomplete':
-            states.profileIncomplete = true;
-            break;
-          case 'friend_invite':
-            states.friendInvites = true;
-            break;
-          case 'achievement':
-            states.achievements = true;
-            break;
-          case 'campus_update':
-            states.campusUpdates = true;
-            break;
-        }
-      });
-      
-      setNotificationStates(states);
-    } catch (error) {
-      console.error('Error loading notifications:', error);
     }
   };
 
@@ -884,21 +818,7 @@ function App() {
             >
               €{totalEarnings}
             </button>
-            <button
-              onClick={() => setShowNotifications(true)}
-              className="relative p-2 rounded-full hover:bg-slate-700/50 transition-colors"
-            >
-              <Bell className={`w-6 h-6 ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`} />
-              {unreadNotifications > 0 && (
-                <>
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center animate-bounce">
-                    {unreadNotifications}
-                  </span>
-                  {/* Additional notification ring */}
-                  <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping opacity-30"></div>
-                </>
-              )}
-            </button>
+            <NotificationBell onClick={() => setShowNotifications(true)} />
             <button
               onClick={() => setIsDark(!isDark)}
               className={`p-2 rounded-full ${isDark ? 'bg-slate-700 text-yellow-400' : 'bg-gray-200 text-gray-700'} hover:scale-110 transition-all duration-300`}
