@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Eye, EyeOff, Mail, Lock, User, X, Zap } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, X } from 'lucide-react';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -198,9 +198,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
-            <Zap className="w-10 h-10 text-white" />
+            <img
+              src="https://app.mutuus-app.de/assets/mutuuslogo9.webp"
+              alt="Mutuus Logo"
+              className="w-16 h-16 object-contain"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">CleanWork</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Mutuus Karma Exchange</h1>
           
           {/* Beta Offer */}
           <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-4 mb-6">
