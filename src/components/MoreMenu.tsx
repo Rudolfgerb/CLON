@@ -266,6 +266,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
             onSubmit={handleProfileUpdate}
             error={error}
             success={success}
+            userId={user?.id || ''}
           />
         </div>
       </div>
