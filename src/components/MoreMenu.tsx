@@ -24,7 +24,6 @@ import { supabase } from '../lib/supabase';
 import { products, getProductByPriceId } from '../stripe-config';
 import ProfileForm, { ProfileData } from './ProfileForm';
 import KarmaExchange from './KarmaExchange';
-import NotificationSettingsPage from './NotificationSettingsPage';
 import HelpPage from './HelpPage';
 import LegalPage from './LegalPage';
 
@@ -50,7 +49,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [showPremium, setShowPremium] = useState(false);
   const [showKarmaStore, setShowKarmaStore] = useState(false);
   const [showKarmaExchange, setShowKarmaExchange] = useState(false);
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -576,15 +574,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
     );
   }
 
-  if (showNotificationSettings) {
-    return (
-      <NotificationSettingsPage
-        isDark={isDark}
-        onBack={() => setShowNotificationSettings(false)}
-      />
-    );
-  }
-
   if (showHelp) {
     return (
       <HelpPage
@@ -626,13 +615,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
       description: 'Design anpassen',
       onClick: onToggleTheme,
       color: 'text-yellow-500'
-    },
-    {
-      icon: Bell,
-      label: 'Benachrichtigungen',
-      description: 'Push-Einstellungen',
-      onClick: () => setShowNotificationSettings(true),
-      color: 'text-purple-500'
     },
     {
       icon: Shield,
