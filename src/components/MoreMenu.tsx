@@ -685,7 +685,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
             </div>
             <div className="flex-1">
               <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {userProfile?.full_name || 'CleanWork User'}
+                {userProfile?.full_name || 'Mutuus User'}
               </h3>
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 {userProfile?.email || user?.email}

@@ -255,9 +255,9 @@ function App() {
       }
       
       // Check if profile needs updates (missing name or default values)
-      const needsUpdate = !profile?.full_name || 
-                         profile.full_name === 'CleanWork' || 
-                         profile.full_name === 'CleanWork User' ||
+      const needsUpdate = !profile?.full_name ||
+                         profile.full_name === 'Mutuus' ||
+                         profile.full_name === 'Mutuus User' ||
                          profile.full_name.trim() === '';
       
       setProfileNeedsUpdate(needsUpdate);
@@ -420,7 +420,7 @@ function App() {
           .insert({
             id: userId,
             email: user?.email || '',
-            full_name: user?.user_metadata?.full_name || 'CleanWork User',
+            full_name: user?.user_metadata?.full_name || 'Mutuus User',
             karma: 0,
             level: 1,
             premium: false,
@@ -862,7 +862,7 @@ function App() {
             </button>
             <div>
               <h1 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-500`}>
-                {userProfile?.full_name || 'CleanWork'}
+                {userProfile?.full_name || 'Mutuus'}
               </h1>
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-500`}>
                 Karma: {karmaPoints} Punkte {todayKarmaEarned > 0 ? `(+${todayKarmaEarned} heute!)` : ''}
