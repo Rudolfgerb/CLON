@@ -88,6 +88,14 @@ function App() {
     };
   }, [user]);
 
+  useEffect(() => {
+    const handleNavigateToNotifications = () => setShowNotifications(true);
+    window.addEventListener('navigateToNotifications', handleNavigateToNotifications);
+    return () => {
+      window.removeEventListener('navigateToNotifications', handleNavigateToNotifications);
+    };
+  }, []);
+
   // Load real user data
   const loadUserData = async (userId: string) => {
     try {
