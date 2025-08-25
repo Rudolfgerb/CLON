@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  User, 
-  Settings, 
-  CreditCard, 
-  HelpCircle, 
+import {
+  User,
+  Settings,
+  CreditCard,
+  HelpCircle,
   LogOut, 
   Moon, 
   Sun, 
   Bell,
   Shield,
   FileText,
-  Mail,
   Star,
   Crown,
   Zap,
@@ -24,6 +23,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { products, getProductByPriceId } from '../stripe-config';
+import ProfileForm, { ProfileData } from './ProfileForm';
 
 interface MoreMenuProps {
   isDark: boolean;
@@ -51,9 +51,14 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [success, setSuccess] = useState('');
 
   // Profile form state
-  const [profileData, setProfileData] = useState({
+  const [profileData, setProfileData] = useState<ProfileData>({
     full_name: '',
-    email: ''
+    email: '',
+    bio: '',
+    twitter: '',
+    instagram: '',
+    website: '',
+    avatar_url: ''
   });
 
   useEffect(() => {
@@ -95,7 +100,12 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
         setUserProfile(profile);
         setProfileData({
           full_name: profile.full_name || '',
-          email: profile.email || user.email || ''
+          email: profile.email || user.email || '',
+          bio: profile.bio || '',
+          twitter: profile.twitter || '',
+          instagram: profile.instagram || '',
+          website: profile.website || '',
+          avatar_url: profile.avatar_url || ''
         });
       }
 
@@ -135,7 +145,12 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
         .from('profiles')
         .update({
           full_name: profileData.full_name,
-          email: profileData.email
+          email: profileData.email,
+          bio: profileData.bio,
+          twitter: profileData.twitter,
+          instagram: profileData.instagram,
+          website: profileData.website,
+          avatar_url: profileData.avatar_url
         })
         .eq('id', user.id);
 
@@ -243,90 +258,15 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
             </div>
           </div>
 
-          <form onSubmit={handleProfileUpdate} className="space-y-6">
-            <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-              <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Persönliche Daten
-              </h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Vollständiger Name
-                  </label>
-                  <div className="relative">
-                    <User className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <input
-                      type="text"
-                      value={profileData.full_name}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, full_name: e.target.value }))}
-                      className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
-                        isDark 
-                          ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
-                          : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-                      placeholder="Ihr vollständiger Name"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    E-Mail Adresse
-                  </label>
-                  <div className="relative">
-                    <Mail className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <input
-                      type="email"
-                      value={profileData.email}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                      className={`w-full pl-12 pr-4 py-3 rounded-xl border transition-colors ${
-                        isDark 
-                          ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
-                          : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500`}
-                      placeholder="ihre@email.com"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Error/Success Messages */}
-            {error && (
-              <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 flex items-center space-x-3">
-                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                <p className="text-red-200 text-sm">{error}</p>
-              </div>
-            )}
-
-            {success && (
-              <div className="bg-green-500/20 border border-green-500/30 rounded-xl p-4 flex items-center space-x-3">
-                <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-                <p className="text-green-200 text-sm">{success}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Wird gespeichert...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-5 h-5" />
-                  <span>Profil speichern</span>
-                </>
-              )}
-            </button>
-          </form>
+          <ProfileForm
+            isDark={isDark}
+            profileData={profileData}
+            setProfileData={setProfileData}
+            loading={loading}
+            onSubmit={handleProfileUpdate}
+            error={error}
+            success={success}
+          />
         </div>
       </div>
     );
