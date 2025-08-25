@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import {
   User,
@@ -23,6 +24,9 @@ import { supabase } from '../lib/supabase';
 import { products, getProductByPriceId } from '../stripe-config';
 import ProfileForm, { ProfileData } from './ProfileForm';
 import KarmaExchange from './KarmaExchange';
+import NotificationSettingsPage from './NotificationSettingsPage';
+import HelpPage from './HelpPage';
+import LegalPage from './LegalPage';
 
 interface MoreMenuProps {
   isDark: boolean;
@@ -46,6 +50,9 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [showPremium, setShowPremium] = useState(false);
   const [showKarmaStore, setShowKarmaStore] = useState(false);
   const [showKarmaExchange, setShowKarmaExchange] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showLegal, setShowLegal] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -569,6 +576,33 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
     );
   }
 
+  if (showNotificationSettings) {
+    return (
+      <NotificationSettingsPage
+        isDark={isDark}
+        onBack={() => setShowNotificationSettings(false)}
+      />
+    );
+  }
+
+  if (showHelp) {
+    return (
+      <HelpPage
+        isDark={isDark}
+        onBack={() => setShowHelp(false)}
+      />
+    );
+  }
+
+  if (showLegal) {
+    return (
+      <LegalPage
+        isDark={isDark}
+        onBack={() => setShowLegal(false)}
+      />
+    );
+  }
+
   // Main Menu
   const menuItems = [
     {
@@ -597,7 +631,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
       icon: Bell,
       label: 'Benachrichtigungen',
       description: 'Push-Einstellungen',
-      onClick: () => window.dispatchEvent(new Event('navigateToNotifications')),
+      onClick: () => setShowNotificationSettings(true),
       color: 'text-purple-500'
     },
     {
@@ -611,14 +645,14 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
       icon: HelpCircle,
       label: 'Hilfe & Support',
       description: 'FAQ und Kontakt',
-      onClick: () => {},
+      onClick: () => setShowHelp(true),
       color: 'text-orange-500'
     },
     {
       icon: FileText,
       label: 'AGB & Datenschutz',
       description: 'Rechtliche Informationen',
-      onClick: () => {},
+      onClick: () => setShowLegal(true),
       color: 'text-gray-500'
     }
   ];
