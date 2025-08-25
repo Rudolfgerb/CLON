@@ -32,6 +32,9 @@ export interface Lesson {
   code_example: string | null;
   karma_reward: number;
   order_index: number;
+  is_published: boolean;
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+  estimated_duration: number | null;
   created_at: string;
   updated_at: string;
 }

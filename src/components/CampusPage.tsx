@@ -1284,7 +1284,8 @@ const user: User = {
                           content: lesson.description, // Using description as content for now
                           code_example: lesson.hasCode ? lesson.codeContent : null,
                           karma_reward: 25,
-                          order_index: i
+                          order_index: i,
+                          is_published: true
                         })
                         .select()
                         .single();
