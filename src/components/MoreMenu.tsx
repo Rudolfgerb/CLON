@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   User,
-  Settings,
+  BookOpen,
   CreditCard,
   HelpCircle,
   LogOut, 
   Moon, 
   Sun, 
   Bell,
-  Shield,
   FileText,
   Star,
   Crown,
@@ -24,6 +23,10 @@ import {
 import { supabase } from '../lib/supabase';
 import { products, getProductByPriceId } from '../stripe-config';
 import ProfileForm, { ProfileData } from './ProfileForm';
+import NotificationSettingsPage from './NotificationSettingsPage';
+import HelpPage from './HelpPage';
+import FAQPage from './FAQPage';
+import TermsPage from './TermsPage';
 
 interface MoreMenuProps {
   isDark: boolean;
@@ -46,6 +49,10 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
   const [showPayments, setShowPayments] = useState(false);
   const [showPremium, setShowPremium] = useState(false);
   const [showKarmaStore, setShowKarmaStore] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showFAQ, setShowFAQ] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -546,6 +553,46 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
     );
   }
 
+  // Notification Settings Page
+  if (showNotificationSettings) {
+    return (
+      <NotificationSettingsPage
+        isDark={isDark}
+        onBack={() => setShowNotificationSettings(false)}
+      />
+    );
+  }
+
+  // Help Page
+  if (showHelp) {
+    return (
+      <HelpPage
+        isDark={isDark}
+        onBack={() => setShowHelp(false)}
+      />
+    );
+  }
+
+  // FAQ Page
+  if (showFAQ) {
+    return (
+      <FAQPage
+        isDark={isDark}
+        onBack={() => setShowFAQ(false)}
+      />
+    );
+  }
+
+  // Terms Page
+  if (showTerms) {
+    return (
+      <TermsPage
+        isDark={isDark}
+        onBack={() => setShowTerms(false)}
+      />
+    );
+  }
+
   // Main Menu
   const menuItems = [
     {
@@ -574,28 +621,28 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, onToggleTheme }) => {
       icon: Bell,
       label: 'Benachrichtigungen',
       description: 'Push-Einstellungen',
-      onClick: () => {},
+      onClick: () => setShowNotificationSettings(true),
       color: 'text-purple-500'
-    },
-    {
-      icon: Shield,
-      label: 'Datenschutz',
-      description: 'Privatsphäre-Einstellungen',
-      onClick: () => {},
-      color: 'text-indigo-500'
     },
     {
       icon: HelpCircle,
       label: 'Hilfe & Support',
-      description: 'FAQ und Kontakt',
-      onClick: () => {},
+      description: 'Kontakt & Unterstützung',
+      onClick: () => setShowHelp(true),
       color: 'text-orange-500'
+    },
+    {
+      icon: BookOpen,
+      label: 'FAQ',
+      description: 'Häufige Fragen',
+      onClick: () => setShowFAQ(true),
+      color: 'text-indigo-500'
     },
     {
       icon: FileText,
       label: 'AGB & Datenschutz',
       description: 'Rechtliche Informationen',
-      onClick: () => {},
+      onClick: () => setShowTerms(true),
       color: 'text-gray-500'
     }
   ];
