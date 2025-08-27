@@ -96,35 +96,6 @@ const AdminJobs: React.FC<AdminJobsProps> = ({ isDark }) => {
       console.error('Error deleting job:', error);
     }
   };
-  const updateJobStatus = async (jobId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('jobs')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', jobId);
-
-      if (error) throw error;
-      loadJobs(); // Refresh data
-    } catch (error) {
-      console.error('Error updating job status:', error);
-    }
-  };
-
-  const deleteJob = async (jobId: string) => {
-    if (!confirm('Sind Sie sicher, dass Sie diesen Job löschen möchten?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('jobs')
-        .delete()
-        .eq('id', jobId);
-
-      if (error) throw error;
-      loadJobs(); // Refresh data
-    } catch (error) {
-      console.error('Error deleting job:', error);
-    }
-  };
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
