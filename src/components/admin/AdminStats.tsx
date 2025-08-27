@@ -126,7 +126,7 @@ const AdminStats: React.FC<AdminStatsProps> = ({ isDark, stats, loading }) => {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Revenue Chart */}
         <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
           <div className="flex items-center justify-between mb-6">
@@ -144,34 +144,6 @@ const AdminStats: React.FC<AdminStatsProps> = ({ isDark, stats, loading }) => {
               <BarChart3 className={`w-12 h-12 ${isDark ? 'text-gray-400' : 'text-gray-400'} mx-auto mb-2`} />
               <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Umsatzdiagramm</p>
             </div>
-          </div>
-        </div>
-
-        {/* Job Categories */}
-        <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border`}>
-          <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'} mb-6`}>
-            Job Kategorien
-          </h3>
-          <div className="space-y-4">
-            {[
-              { name: 'Entwicklung', count: 45, color: 'bg-blue-500' },
-              { name: 'Design', count: 32, color: 'bg-purple-500' },
-              { name: 'Marketing', count: 28, color: 'bg-green-500' },
-              { name: 'Texte', count: 19, color: 'bg-yellow-500' },
-              { name: 'Sonstiges', count: 15, color: 'bg-red-500' }
-            ].map((category, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
-                  <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {category.name}
-                  </span>
-                </div>
-                <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {category.count}
-                </span>
-              </div>
-            ))}
           </div>
         </div>
       </div>

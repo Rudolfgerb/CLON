@@ -9,24 +9,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Types for new job system
-export interface JobCategory {
-  id: string;
-  name: string;
-  description: string | null;
-  icon: string;
-  color: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface JobPost {
   id: string;
   title: string;
   description: string;
   job_type: 'cash' | 'karma';
-  category_id: string;
   location: string;
   difficulty: 'easy' | 'medium' | 'hard';
   tags: string[];
@@ -45,7 +32,6 @@ export interface JobPost {
   created_at: string;
   updated_at: string;
   // Relations
-  job_categories?: JobCategory;
   profiles?: Profile;
   job_media?: JobMedia[];
   job_applications?: JobApplication[];

@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Users, Search, Crown, Shield,
   CheckCircle, XCircle, Star
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-
 interface AdminUsersProps {
   isDark: boolean;
 }
@@ -23,8 +21,8 @@ interface UserProfile {
 }
 
 const AdminUsers: React.FC<AdminUsersProps> = ({ isDark }) => {
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [users] = useState<UserProfile[]>([]);
+  const [loading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
