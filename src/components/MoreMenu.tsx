@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { User, CreditCard, HelpCircle, LogOut, Settings, Star, Crown, Euro, X, Zap } from 'lucide-react';
+import { User, CreditCard, HelpCircle, LogOut, Settings, Star, Crown, Euro, X, Zap, Calculator } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import PremiumModal from './PremiumModal';
+import { COMMISSION_RATES } from '../lib/stripe';
+import { COMMISSION_RATES } from '../lib/stripe';
 
 interface MoreMenuProps {
   isDark: boolean;
@@ -214,17 +216,35 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
         <div className="grid grid-cols-2 gap-4 mb-6">
           <button 
             onClick={() => setShowPremium(true)}
-            className="group relative overflow-hidden bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300"
+            className={`group relative overflow-hidden rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300 ${
+              userProfile?.premium 
+                ? 'bg-gradient-to-br from-yellow-500 to-orange-500' 
+                : 'bg-gradient-to-br from-gray-500 to-gray-600'
+            }`}
+              userProfile?.premium 
+                ? 'bg-gradient-to-br from-yellow-500 to-orange-500' 
+                : 'bg-gradient-to-br from-gray-500 to-gray-600'
+            }`}
           >
             <Crown className="w-8 h-8 mb-3" />
             <div className="text-left">
               <div className="font-bold text-lg">
-                {userProfile?.premium ? 'Premium' : 'Upgrade'}
+                {userProfile?.premium ? 'Premium Aktiv' : 'Premium Upgrade'}
               </div>
               <div className="text-sm opacity-90">
-                {userProfile?.premium ? '5% Gebühren' : '€19.99/Monat'}
+                {userProfile?.premium ? 'Nur 5% Gebühren' : '€19.99/Monat'}
               </div>
             </div>
+            {userProfile?.premium && (
+              <div className="absolute top-2 right-2 bg-white/20 rounded-full px-2 py-1">
+                <span className="text-xs font-bold">AKTIV</span>
+              </div>
+            )}
+            {userProfile?.premium && (
+              <div className="absolute top-2 right-2 bg-white/20 rounded-full px-2 py-1">
+                <span className="text-xs font-bold">AKTIV</span>
+              </div>
+            )}
           </button>
 
           <button 
@@ -237,6 +257,82 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
               <div className="text-sm opacity-90">1000 für €2.99</div>
             </div>
           </button>
+        </div>
+
+        {/* Commission Info */}
+        <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border mb-6`}>
+          <div className="flex items-center space-x-2 mb-3">
+            <Calculator className="w-5 h-5 text-blue-500" />
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Deine Gebühren
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <div className={`text-2xl font-bold ${userProfile?.premium ? 'text-green-500' : 'text-red-500'}`}>
+                {userProfile?.premium ? '5%' : '9.8%'}
+              </div>
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Gebühren pro Job
+              </div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-500">
+                {userProfile?.premium ? '€4.75' : '€9.31'}
+              </div>
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Bei €95 Job
+              </div>
+            </div>
+          </div>
+          {!userProfile?.premium && (
+            <div className="mt-3 text-center">
+              <button
+                onClick={() => setShowPremium(true)}
+                className="text-yellow-500 text-sm font-medium hover:text-yellow-400"
+              >
+                Spare mit Premium →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Commission Info */}
+        <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-4 border mb-6`}>
+          <div className="flex items-center space-x-2 mb-3">
+            <Calculator className="w-5 h-5 text-blue-500" />
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Deine Gebühren
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <div className={`text-2xl font-bold ${userProfile?.premium ? 'text-green-500' : 'text-red-500'}`}>
+                {userProfile?.premium ? '5%' : '9.8%'}
+              </div>
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Gebühren pro Job
+              </div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-500">
+                {userProfile?.premium ? '€4.75' : '€9.31'}
+              </div>
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Bei €95 Job
+              </div>
+            </div>
+          </div>
+          {!userProfile?.premium && (
+            <div className="mt-3 text-center">
+              <button
+                onClick={() => setShowPremium(true)}
+                className="text-yellow-500 text-sm font-medium hover:text-yellow-400"
+              >
+                Spare mit Premium →
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Menu Items */}

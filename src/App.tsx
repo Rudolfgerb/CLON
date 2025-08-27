@@ -6,6 +6,7 @@ import JobsPage from './components/JobsPage';
 import CampusPage from './components/CampusPage';
 import MoreMenu from './components/MoreMenu';
 import CreateJobPage from './components/CreateJobPage';
+import SuccessPage from './components/SuccessPage';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -13,6 +14,17 @@ function App() {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    // Check for Stripe success/cancel params
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success')) {
+      setShowSuccess(true);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     // Check current session
@@ -88,6 +100,20 @@ function App() {
 
   if (!user) {
     return <AuthPage onAuthSuccess={() => {}} />;
+  }
+
+  if (showSuccess) {
+    return (
+      <SuccessPage 
+        isDark={isDark} 
+        onContinue={() => {
+          setShowSuccess(false);
+          setActiveTab('home');
+          // Reload user profile to get updated premium status
+          if (user) loadUserProfile(user.id);
+        }} 
+      />
+    );
   }
 
   const navItems = [

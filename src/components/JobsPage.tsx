@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Clock, Euro, Star, Briefcase, Crown } from 'lucide-react';
+import { Search, MapPin, Clock, Euro, Star, Briefcase, Crown, Calculator } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import JobApplicationModal from './JobApplicationModal';
 import { calculateJobCommission } from '../lib/stripe';
@@ -67,10 +67,26 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
   const formatPayment = (job: Job) => {
     if (job.job_type === 'cash') {
       const amount = job.fixed_amount || (job.hourly_rate * job.estimated_hours);
-      const commission = calculateJobCommission(amount, userProfile?.premium || false);
-      return `€${commission.netAmount.toFixed(2)}`;
-    }
+      return `€${amount.toFixed(2)}`;
     return `${job.karma_reward} Karma`;
+  };
+
+  const getNetPayment = (job: Job) => {
+    if (job.job_type === 'cash') {
+      const amount = job.fixed_amount || (job.hourly_rate * job.estimated_hours);
+      const commission = calculateJobCommission(amount, userProfile?.premium || false);
+      return `€${commission.netAmount.toFixed(2)} netto`;
+    }
+    return null;
+  };
+
+  const getNetPayment = (job: Job) => {
+    if (job.job_type === 'cash') {
+      const amount = job.fixed_amount || (job.hourly_rate * job.estimated_hours);
+      const commission = calculateJobCommission(amount, userProfile?.premium || false);
+      return `€${commission.netAmount.toFixed(2)} netto`;
+    }
+    return null;
   };
 
   if (loading) {
@@ -147,6 +163,33 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
                 )}
               </div>
 
+              {/* Commission Breakdown for Cash Jobs */}
+              {selectedJob.job_type === 'cash' && (
+                <div className={`p-4 rounded-xl ${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} border mb-4`}>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Calculator className="w-4 h-4 text-blue-500" />
+                    <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Zahlungsübersicht
+                    </span>
+                    {userProfile?.premium && <Crown className="w-4 h-4 text-yellow-500" />}
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>Bruttobetrag:</span>
+                      <span className={isDark ? 'text-white' : 'text-gray-900'}>€{(selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours)).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>Gebühren ({userProfile?.premium ? '5%' : '9.8%'}):</span>
+                      <span className="text-red-500">-€{calculateJobCommission(selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours), userProfile?.premium || false).commission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-green-500 pt-2 border-t border-gray-300">
+                      <span>Sie erhalten:</span>
+                      <span>€{calculateJobCommission(selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours), userProfile?.premium || false).netAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {selectedJob.job_type === 'cash' && (
                   <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-gray-100'}`}>
@@ -183,6 +226,33 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
                   </div>
                 )}
                 
+                {/* Commission Breakdown for Cash Jobs */}
+                {selectedJob.job_type === 'cash' && (
+                  <div className={`p-4 rounded-xl ${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} border mb-4`}>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Calculator className="w-4 h-4 text-blue-500" />
+                      <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Zahlungsübersicht
+                      </span>
+                      {userProfile?.premium && <Crown className="w-4 h-4 text-yellow-500" />}
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>Bruttobetrag:</span>
+                        <span className={isDark ? 'text-white' : 'text-gray-900'}>€{(selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours)).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>Gebühren ({userProfile?.premium ? '5%' : '9.8%'}):</span>
+                        <span className="text-red-500">-€{calculateJobCommission(selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours), userProfile?.premium || false).commission.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-green-500 pt-2 border-t border-gray-300">
+                        <span>Sie erhalten:</span>
+                        <span>€{calculateJobCommission(selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours), userProfile?.premium || false).netAmount.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={() => {
                     setSelectedJob(null);
@@ -293,6 +363,18 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
                           {job.job_type === 'cash' ? <Euro className="w-4 h-4 mr-1" /> : <Star className="w-4 h-4 mr-1" />}
                           {formatPayment(job)}
                         </div>
+                        {job.job_type === 'cash' && (
+                          <div className="flex items-center text-blue-500">
+                            <Calculator className="w-4 h-4 mr-1" />
+                            {getNetPayment(job)}
+                          </div>
+                        )}
+                        {job.job_type === 'cash' && (
+                          <div className="flex items-center text-blue-500">
+                            <Calculator className="w-4 h-4 mr-1" />
+                            {getNetPayment(job)}
+                          </div>
+                        )}
                         <div className={`flex items-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                           <MapPin className="w-4 h-4 mr-1" />
                           {job.location}
@@ -302,6 +384,26 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
                           {job.estimated_hours}h
                         </div>
                       </div>
+
+                      {/* Premium Badge for better rates */}
+                      {job.job_type === 'cash' && userProfile?.premium && (
+                        <div className="mt-2">
+                          <span className="inline-flex items-center space-x-1 bg-yellow-500/20 text-yellow-600 px-2 py-1 rounded-full text-xs font-medium">
+                            <Crown className="w-3 h-3" />
+                            <span>Premium: Nur 5% Gebühren</span>
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Premium Badge for better rates */}
+                      {job.job_type === 'cash' && userProfile?.premium && (
+                        <div className="mt-2">
+                          <span className="inline-flex items-center space-x-1 bg-yellow-500/20 text-yellow-600 px-2 py-1 rounded-full text-xs font-medium">
+                            <Crown className="w-3 h-3" />
+                            <span>Premium: Nur 5% Gebühren</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

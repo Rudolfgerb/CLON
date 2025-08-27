@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Send, Euro, Star, AlertTriangle, Crown } from 'lucide-react';
+import { X, Send, Euro, Star, AlertTriangle, Crown, Calculator } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { calculateJobCommission } from '../lib/stripe';
 
@@ -69,6 +69,9 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
   const jobAmount = job.fixed_amount || (job.hourly_rate * job.estimated_hours);
   const commission = job.job_type === 'cash' ? calculateJobCommission(jobAmount, userProfile?.premium || false) : null;
 
+  // Check if user has enough karma for karma jobs
+  const hasEnoughKarma = job.job_type === 'karma' ? (userProfile?.karma || 0) >= (job.karma_reward || 0) : true;
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl w-full max-w-md border shadow-2xl`}>
@@ -87,18 +90,23 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
 
           {/* Job Payment Info for Cash Jobs */}
           {job.job_type === 'cash' && commission && (
-            <div className={`${isDark ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-4 mb-6`}>
-              <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-2`}>
-                Zahlungsübersicht
-              </h4>
-              <div className="space-y-1 text-sm">
+            <div className={`p-4 rounded-xl ${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} border mb-6`}>
+              <div className="flex items-center space-x-2 mb-2">
+                <Calculator className="w-4 h-4 text-blue-500" />
+                <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Zahlungsübersicht
+                </span>
+              </div>
+              <div className="text-sm space-y-1">
                 <div className="flex justify-between">
-                  <span>Bruttobetrag:</span>
+                  <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>Bruttobetrag:</span>
                   <span>€{commission.grossAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="flex items-center space-x-1">
-                    <span>Gebühren ({commission.commissionRate}%):</span>
+                    <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>
+                      Gebühren ({commission.commissionRate}%):
+                    </span>
                     {userProfile?.premium && <Crown className="w-3 h-3 text-yellow-500" />}
                   </span>
                   <span className="text-red-500">-€{commission.commission.toFixed(2)}</span>
@@ -110,11 +118,44 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
               </div>
               
               {!userProfile?.premium && (
-                <div className="mt-3 p-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+                <div className="mt-3 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                    <span className="text-yellow-200 text-xs">
-                      Mit Premium nur 5% Gebühren!
+                    <span className={`text-xs ${isDark ? 'text-yellow-200' : 'text-yellow-700'}`}>
+                      Mit Premium nur 5% Gebühren! Spare €{(commission.grossAmount * 0.048).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Karma Job Info */}
+          {job.job_type === 'karma' && (
+            <div className={`p-4 rounded-xl ${isDark ? 'bg-purple-500/20 border-purple-500/30' : 'bg-purple-50 border-purple-200'} border mb-6`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Star className="w-5 h-5 text-purple-500" />
+                  <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Karma Job
+                  </span>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-purple-500">
+                    {job.karma_reward} Karma
+                  </div>
+                  <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Du hast: {userProfile?.karma || 0}
+                  </div>
+                </div>
+              </div>
+              
+              {!hasEnoughKarma && (
+                <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <span className={`text-xs ${isDark ? 'text-red-200' : 'text-red-700'}`}>
+                      Nicht genügend Karma! Du benötigst {(job.karma_reward || 0) - (userProfile?.karma || 0)} mehr Karma.
                     </span>
                   </div>
                 </div>
@@ -180,7 +221,7 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (job.job_type === 'karma' && !hasEnoughKarma)}
               className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 ${
                 job.job_type === 'cash'
                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
@@ -188,7 +229,14 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
               } disabled:opacity-50`}
             >
               <Send className="w-5 h-5" />
-              <span>{loading ? 'Wird gesendet...' : 'Bewerbung senden'}</span>
+              <span>
+                {loading 
+                  ? 'Wird gesendet...' 
+                  : job.job_type === 'karma' && !hasEnoughKarma
+                  ? 'Nicht genügend Karma'
+                  : 'Bewerbung senden'
+                }
+              </span>
             </button>
           </form>
         </div>
