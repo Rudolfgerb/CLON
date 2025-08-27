@@ -105,7 +105,7 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
                 <div className="flex justify-between">
                   <span className="flex items-center space-x-1">
                     <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>
-                      Gebühren ({commission.commissionRate}%):
+                      Provision ({commission.commissionRate}%):
                     </span>
                     {userProfile?.premium && <Crown className="w-3 h-3 text-yellow-500" />}
                   </span>
@@ -122,7 +122,7 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-4 h-4 text-yellow-500" />
                     <span className={`text-xs ${isDark ? 'text-yellow-200' : 'text-yellow-700'}`}>
-                      Mit Premium nur 5% Gebühren! Spare €{(commission.grossAmount * 0.048).toFixed(2)}
+                      Mit Premium nur 5% Provision! Spare €{(commission.grossAmount * 0.048).toFixed(2)}
                     </span>
                   </div>
                 </div>

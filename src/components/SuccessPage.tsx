@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, Crown, Star, ArrowRight } from 'lucide-react';
+import { STRIPE_PRODUCTS } from '../stripe-config';
 
 interface SuccessPageProps {
   isDark: boolean;
@@ -27,6 +28,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({ isDark, onContinue }) => {
   const urlParams = new URLSearchParams(window.location.search);
   const success = urlParams.get('success');
   const sessionId = urlParams.get('session_id');
+  const productType = urlParams.get('product_type') || 'premium';
 
   if (!success) return null;
 
@@ -39,19 +41,32 @@ const SuccessPage: React.FC<SuccessPageProps> = ({ isDark, onContinue }) => {
             Zahlung erfolgreich!
           </h1>
           <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Ihre Bestellung wurde erfolgreich verarbeitet.
+            {productType === 'karma_1000' 
+              ? 'Ihre Karma Punkte wurden Ihrem Konto gutgeschrieben.'
+              : 'Ihr Premium Zugang wurde aktiviert.'
+            }
           </p>
         </div>
 
-        <div className={`${isDark ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-2xl p-6 mb-6`}>
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <Crown className="w-6 h-6 text-yellow-500" />
+        <div className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-2xl p-6 mb-6 border`}>
+          <div className="flex items-center justify-center space-x-3 mb-3">
+            {productType === 'karma_1000' ? (
+              <Star className="w-6 h-6 text-purple-500" />
+            ) : (
+              <Crown className="w-6 h-6 text-yellow-500" />
+            )}
             <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Premium aktiviert
+              {productType === 'karma_1000' 
+                ? `${STRIPE_PRODUCTS.karma_1000.karma} Karma erhalten`
+                : 'Premium Zugang aktiviert'
+              }
             </span>
           </div>
           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Sie zahlen jetzt nur noch 5% Gebühren bei Cash Jobs!
+            {productType === 'karma_1000'
+              ? 'Die Karma Punkte stehen Ihnen sofort zur Verfügung.'
+              : 'Sie zahlen jetzt nur noch 5% Provision und haben Zugang zu Level 5 Jobs!'
+            }
           </p>
         </div>
 

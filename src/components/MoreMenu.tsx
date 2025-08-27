@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, CreditCard, HelpCircle, LogOut, Settings, Star, Crown, Euro, X, Zap, Calculator } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import PremiumModal from './PremiumModal';
-import { COMMISSION_RATES } from '../lib/stripe';
+import { COMMISSION_RATES, STRIPE_PRODUCTS } from '../stripe-config';
 
 interface MoreMenuProps {
   isDark: boolean;
@@ -224,10 +224,10 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
               <Crown className="w-8 h-8 mb-3" />
               <div className="text-left">
                 <div className="font-bold text-lg">
-                  {userProfile?.premium ? 'Premium Aktiv' : 'Premium Upgrade'}
+                  {userProfile?.premium ? 'Premium Aktiv' : STRIPE_PRODUCTS.premium.name}
                 </div>
                 <div className="text-sm opacity-90">
-                  {userProfile?.premium ? 'Nur 5% Gebühren' : '€19.99/Monat'}
+                  {userProfile?.premium ? 'Nur 5% Provision' : STRIPE_PRODUCTS.premium.price + STRIPE_PRODUCTS.premium.period}
                 </div>
               </div>
               {userProfile?.premium && (
@@ -243,8 +243,8 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
             >
               <Zap className="w-8 h-8 mb-3" />
               <div className="text-left">
-                <div className="font-bold text-lg">Karma kaufen</div>
-                <div className="text-sm opacity-90">1000 für €2.99</div>
+                <div className="font-bold text-lg">{STRIPE_PRODUCTS.karma_1000.name}</div>
+                <div className="text-sm opacity-90">{STRIPE_PRODUCTS.karma_1000.karma} für {STRIPE_PRODUCTS.karma_1000.price}</div>
               </div>
             </button>
           </div>
@@ -263,7 +263,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
                   {userProfile?.premium ? '5%' : '9.8%'}
                 </div>
                 <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Gebühren pro Job
+                  Provision pro Job
                 </div>
               </div>
               <div>
@@ -271,7 +271,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
                   {userProfile?.premium ? '€4.75' : '€9.31'}
                 </div>
                 <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Bei €95 Job
+                  Bei 95€ Job
                 </div>
               </div>
             </div>
@@ -281,7 +281,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
                   onClick={() => setShowPremium(true)}
                   className="text-yellow-500 text-sm font-medium hover:text-yellow-400"
                 >
-                  Spare mit Premium →
+                  Premium holen und sparen →
                 </button>
               </div>
             )}

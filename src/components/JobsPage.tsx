@@ -171,7 +171,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
                       <span className={isDark ? 'text-white' : 'text-gray-900'}>€{(selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours)).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>Gebühren ({userProfile?.premium ? '5%' : '9.8%'}):</span>
+                      <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>Provision ({userProfile?.premium ? '5%' : '9.8%'}):</span>
                       <span className="text-red-500">-€{calculateJobCommission(selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours), userProfile?.premium || false).commission.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-semibold text-green-500 pt-2 border-t border-gray-300">
@@ -194,7 +194,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
                       : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white'
                   }`}
                 >
-                  Jetzt bewerben
+                  Bewerbung senden
                 </button>
               </div>
             </div>
@@ -314,7 +314,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
                         <div className="mt-2">
                           <span className="inline-flex items-center space-x-1 bg-yellow-500/20 text-yellow-600 px-2 py-1 rounded-full text-xs font-medium">
                             <Crown className="w-3 h-3" />
-                            <span>Premium: Nur 5% Gebühren</span>
+                            <span>Premium: Nur 5% Provision</span>
                           </span>
                         </div>
                       )}

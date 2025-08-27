@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Crown, Check, Loader2, Star, Zap } from 'lucide-react';
-import { STRIPE_PRODUCTS, createCheckoutSession } from '../lib/stripe';
+import { createCheckoutSession } from '../lib/stripe';
+import { STRIPE_PRODUCTS } from '../stripe-config';
 
 interface PremiumModalProps {
   isOpen: boolean;
@@ -21,7 +22,8 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, isDark }) 
 
     try {
       await createCheckoutSession(product.priceId, mode, { 
-        product_type: productKey 
+        product_type: productKey,
+        product_id: product.id
       });
     } catch (error: any) {
       setError(error.message || 'Fehler beim Erstellen der Checkout-Session');
@@ -64,7 +66,7 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, isDark }) 
                   <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {STRIPE_PRODUCTS.premium.name}
                   </h3>
-                  <p className="text-yellow-600 font-medium">Spare bei jeder Zahlung!</p>
+                  <p className="text-yellow-600 font-medium">Premium Mitgliedschaft</p>
                 </div>
               </div>
 
@@ -77,13 +79,15 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, isDark }) 
                     {STRIPE_PRODUCTS.premium.period}
                   </span>
                 </div>
-                <div className="flex items-center space-x-4 mt-2 text-sm">
+                <div className="bg-gradient-to-r from-red-50 to-green-50 border border-yellow-200 rounded-xl p-3 mt-3">
+                  <div className="flex items-center space-x-4 text-sm">
                   <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                    Normal: 9.8% Gebühren
+                    Normal: 9.8% Provision
                   </span>
                   <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                    Premium: nur 5% Gebühren
+                    Premium: nur 5% Provision
                   </span>
+                  </div>
                 </div>
               </div>
 
@@ -111,7 +115,7 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, isDark }) 
                 ) : (
                   <>
                     <Crown className="w-5 h-5" />
-                    <span>Premium werden</span>
+                    <span>Premium Zugang erhalten</span>
                   </>
                 )}
               </button>
@@ -126,23 +130,23 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, isDark }) 
                     {STRIPE_PRODUCTS.karma_1000.name}
                   </h3>
                   <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Für Community Jobs verwenden
+                    {STRIPE_PRODUCTS.karma_1000.description}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <Zap className="w-6 h-6 text-purple-500" />
-                  <span className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    1000 Karma
+                  <span className={`text-xl font-bold text-purple-500`}>
+                    {STRIPE_PRODUCTS.karma_1000.karma} Karma Punkte
                   </span>
                 </div>
                 <div className="text-right">
                   <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {STRIPE_PRODUCTS.karma_1000.price}
                   </div>
-                  <div className="text-sm text-purple-500">Einmalzahlung</div>
+                  <div className="text-sm text-purple-500">Einmalige Zahlung</div>
                 </div>
               </div>
 

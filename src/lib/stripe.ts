@@ -1,5 +1,6 @@
 import { loadStripe } from '@stripe/stripe-js';
 import { supabase } from './supabase';
+import { STRIPE_PRODUCTS, COMMISSION_RATES } from '../stripe-config';
 
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
@@ -9,42 +10,12 @@ if (!stripePublishableKey) {
 
 export const stripe = loadStripe(stripePublishableKey);
 
-// Product configurations
-export const STRIPE_PRODUCTS = {
-  premium: {
-    priceId: 'price_premium_monthly_1999',
-    name: 'Premium Mitgliedschaft',
-    price: '€19.99',
-    period: '/Monat',
-    features: [
-      'Nur 5% Gebühren statt 9.8%',
-      'Unbegrenzte Job-Bewerbungen',
-      'Premium Kurse',
-      'Prioritäts-Support',
-      'Erweiterte Analytics'
-    ]
-  },
-  karma_1000: {
-    priceId: 'price_karma_1000_299',
-    name: '1000 Karma Punkte',
-    price: '€2.99',
-    karma: 1000,
-    features: [
-      '1000 Karma Punkte',
-      'Sofort verfügbar',
-      'Für Community Jobs verwenden'
-    ]
-  }
-};
-
-export const COMMISSION_RATES = {
-  regular: 0.098, // 9.8%
-  premium: 0.05   // 5%
-};
+// Re-export for convenience
+export { STRIPE_PRODUCTS, COMMISSION_RATES };
 
 export const createCheckoutSession = async (
   priceId: string, 
-  mode: 'payment' | 'subscription' = 'payment',
+  mode: 'payment' | 'subscription',
   metadata?: Record<string, string>
 ) => {
   try {
