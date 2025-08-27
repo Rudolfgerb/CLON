@@ -9,9 +9,10 @@ interface MoreMenuProps {
   user: any;
   userProfile: any;
   onToggleTheme: () => void;
+  onShowAdmin: () => void;
 }
 
-const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggleTheme }) => {
+const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggleTheme, onShowAdmin }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [showPremium, setShowPremium] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -153,6 +154,14 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
       color: 'text-purple-500'
     },
     {
+      icon: Shield,
+      label: 'Admin Panel',
+      description: 'Verwaltungsbereich',
+      onClick: onShowAdmin,
+      color: 'text-red-500',
+      adminOnly: true
+    },
+    {
       icon: HelpCircle,
       label: 'Hilfe & Support',
       description: 'FAQ und Kontakt',
@@ -289,7 +298,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
 
           {/* Menu Items */}
           <div className="space-y-3 mb-8">
-            {menuItems.map((item, index) => (
+            {menuItems.filter(item => !item.adminOnly || (userProfile?.role === 'admin' || userProfile?.role === 'super_admin')).map((item, index) => (
               <button
                 key={index}
                 onClick={item.onClick}

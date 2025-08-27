@@ -7,6 +7,8 @@ import CampusPage from './components/CampusPage';
 import MoreMenu from './components/MoreMenu';
 import CreateJobPage from './components/CreateJobPage';
 import SuccessPage from './components/SuccessPage';
+import AdminAuth from './components/AdminAuth';
+import AdminDashboard from './components/AdminDashboard';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -15,6 +17,7 @@ function App() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
     // Check for Stripe success/cancel params
@@ -102,6 +105,21 @@ function App() {
     return <AuthPage onAuthSuccess={() => {}} />;
   }
 
+  // Check for admin access
+  if (showAdmin) {
+    return (
+      <AdminAuth user={user} isDark={isDark}>
+        <AdminDashboard
+          user={user}
+          userProfile={userProfile}
+          isDark={isDark}
+          onToggleTheme={() => setIsDark(!isDark)}
+          onExitAdmin={() => setShowAdmin(false)}
+        />
+      </AdminAuth>
+    );
+  }
+
   if (showSuccess) {
     return (
       <SuccessPage 
@@ -131,7 +149,7 @@ function App() {
       case 'campus':
         return <CampusPage isDark={isDark} />;
       case 'more':
-        return <MoreMenu isDark={isDark} user={user} userProfile={userProfile} onToggleTheme={() => setIsDark(!isDark)} />;
+        return <MoreMenu isDark={isDark} user={user} userProfile={userProfile} onToggleTheme={() => setIsDark(!isDark)} onShowAdmin={() => setShowAdmin(true)} />;
       case 'add':
         return <CreateJobPage isDark={isDark} user={user} onBack={() => setActiveTab('home')} />;
       default:
