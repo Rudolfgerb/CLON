@@ -33,22 +33,16 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
 
   const loadJobs = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('job_posts')
-        .select(`
-          *,
-          job_categories (
-            name,
-            description,
-            icon,
-            color
-          ),
-          profiles (
-            full_name,
-            premium
-          ),
-          job_media (
-            id,
+        const { data, error } = await supabase
+          .from('job_posts')
+          .select(`
+            *,
+            profiles (
+              full_name,
+              premium
+            ),
+            job_media (
+              id,
             file_name,
             file_path,
             file_type,
@@ -82,7 +76,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
     return matchesSearch && matchesFilter;
   });
 
-  const formatPayment = (job: Job) => {
+    const formatPayment = (job: JobPost) => {
     if (job.job_type === 'cash') {
       const amount = job.fixed_amount || ((job.hourly_rate || 0) * job.estimated_hours);
       return `€${amount.toFixed(2)}`;
@@ -90,7 +84,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
     return `${job.karma_reward} Karma`;
   };
 
-  const getNetPayment = (job: Job) => {
+    const getNetPayment = (job: JobPost) => {
     if (job.job_type === 'cash') {
       const amount = job.fixed_amount || ((job.hourly_rate || 0) * job.estimated_hours);
       const commission = calculateJobCommission(amount, userProfile?.premium || false);

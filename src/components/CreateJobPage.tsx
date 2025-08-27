@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Euro, Star, Save, ChevronLeft, ChevronRight, Upload, Calendar, Clock, Image, Trash2, FileText } from 'lucide-react';
+import { X, Euro, Star, Save, ChevronLeft, ChevronRight, Upload, Calendar, Clock, Image, Trash2 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
-import { supabase, JobCategory } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 interface CreateJobPageProps {
   isDark: boolean;
@@ -13,32 +13,14 @@ interface CreateJobPageProps {
 const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, onBack }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedJobType, setSelectedJobType] = useState<'cash' | 'karma'>(jobType || 'cash');
-  const [categories, setCategories] = useState<JobCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
   useEffect(() => {
     if (jobType) {
       setSelectedJobType(jobType);
     }
-    loadCategories();
   }, [jobType]);
-
-  const loadCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('job_categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error) {
-      console.error('Error loading categories:', error);
-    }
-  };
 
   const [jobData, setJobData] = useState({
     // Schritt 1: Grundlagen
@@ -48,7 +30,6 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
     titleImageIndex: 0, // Index des Titelbildes
     
     // Schritt 2: Details
-    categoryId: '',
     location: 'remote',
     difficulty: 'easy',
     tags: '',
@@ -79,7 +60,7 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
 
   const steps = [
     { number: 1, title: 'Grundlagen', description: 'Titel, Beschreibung & Medien' },
-    { number: 2, title: 'Details', description: 'Kategorie, Anforderungen & Lieferobjekte' },
+    { number: 2, title: 'Details', description: 'Anforderungen & Lieferobjekte' },
     { number: 3, title: 'Abschluss', description: 'Deadline & Bezahlung' }
   ];
 
@@ -135,7 +116,7 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
       case 1:
         return jobData.title.trim() && jobData.description.trim();
       case 2:
-        return jobData.category && jobData.deliverables.trim();
+        return jobData.deliverables.trim();
       case 3:
         return jobData.deadlineDate && jobData.deadlineTime && 
                (selectedJobType === 'karma' ? jobData.karmaReward : 
@@ -160,7 +141,6 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
         title: jobData.title,
         description: jobData.description,
         job_type: selectedJobType,
-        category_id: jobData.categoryId,
         location: jobData.location,
         difficulty: jobData.difficulty,
         tags: tagsArray,
@@ -396,40 +376,19 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
       case 2:
         return (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Kategorie *
-                </label>
-                <select
-                  value={jobData.categoryId}
-                  onChange={(e) => setJobData(prev => ({ ...prev, categoryId: e.target.value }))}
-                  className={`w-full px-4 py-3 rounded-xl border ${
-                    isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
-                  }`}
-                  required
-                >
-                  <option value="">Kategorie wählen</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.description || cat.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Standort
-                </label>
-                <input
-                  type="text"
-                  value={jobData.location}
-                  onChange={(e) => setJobData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="Remote, Berlin, Hybrid..."
-                  className={`w-full px-4 py-3 rounded-xl border ${
-                    isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
-                />
-              </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Standort
+              </label>
+              <input
+                type="text"
+                value={jobData.location}
+                onChange={(e) => setJobData(prev => ({ ...prev, location: e.target.value }))}
+                placeholder="Remote, Berlin, Hybrid..."
+                className={`w-full px-4 py-3 rounded-xl border ${
+                  isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+              />
             </div>
 
             <div>
@@ -709,12 +668,6 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
                 <div className="flex justify-between">
                   <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Titel:</span>
                   <span className={isDark ? 'text-white' : 'text-gray-900'}>{jobData.title}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Kategorie:</span>
-                  <span className={isDark ? 'text-white' : 'text-gray-900'}>
-                    {categories.find(c => c.id === jobData.categoryId)?.description || 'Nicht ausgewählt'}
-                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Medien:</span>
