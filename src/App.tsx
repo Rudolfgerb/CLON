@@ -192,7 +192,10 @@ function App() {
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-4">
                 <button 
-                  onClick={() => setActiveTab('jobs')}
+                  onClick={() => {
+                    setActiveTab('add');
+                    setJobCreationType('cash');
+                  }}
                   className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300"
                 >
                   <Euro className="w-8 h-8 mb-3" />
@@ -203,13 +206,16 @@ function App() {
                 </button>
                 
                 <button 
-                  onClick={() => setActiveTab('campus')}
+                  onClick={() => {
+                    setActiveTab('add');
+                    setJobCreationType('karma');
+                  }}
                   className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white hover:scale-105 transition-all duration-300"
                 >
                   <Star className="w-8 h-8 mb-3" />
                   <div className="text-left">
-                    <div className="font-bold text-lg">Campus</div>
-                    <div className="text-sm opacity-90">Lernen & Karma</div>
+                    <div className="font-bold text-lg">Karma Jobs</div>
+                    <div className="text-sm opacity-90">Community helfen</div>
                   </div>
                 </button>
               </div>
