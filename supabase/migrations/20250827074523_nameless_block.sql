@@ -21,11 +21,16 @@
 -- Add role column to profiles table
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'profiles' AND column_name = 'role'
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_name = 'profiles'
   ) THEN
-    ALTER TABLE profiles ADD COLUMN role text DEFAULT 'user';
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'profiles' AND column_name = 'role'
+    ) THEN
+      ALTER TABLE profiles ADD COLUMN role text DEFAULT 'user';
+    END IF;
   END IF;
 END $$;
 
