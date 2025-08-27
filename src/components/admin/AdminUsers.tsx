@@ -75,33 +75,6 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ isDark }) => {
       console.error('Error updating user status:', error);
     }
   };
-  const updateUserRole = async (userId: string, newRole: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
-
-      if (error) throw error;
-      loadUsers();
-    } catch (error) {
-      console.error('Error updating user role:', error);
-    }
-  };
-
-  const toggleUserStatus = async (userId: string, isActive: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: !isActive })
-        .eq('id', userId);
-
-      if (error) throw error;
-      loadUsers();
-    } catch (error) {
-      console.error('Error updating user status:', error);
-    }
-  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
