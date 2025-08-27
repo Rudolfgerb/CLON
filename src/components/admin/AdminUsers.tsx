@@ -28,54 +28,6 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ isDark }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
-  const loadUsers = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (error) {
-      console.error('Error loading users:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
-
-  const updateUserRole = async (userId: string, newRole: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
-
-      if (error) throw error;
-      loadUsers();
-    } catch (error) {
-      console.error('Error updating user role:', error);
-    }
-  };
-
-  const toggleUserStatus = async (userId: string, isActive: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: !isActive })
-        .eq('id', userId);
-
-      if (error) throw error;
-      loadUsers();
-    } catch (error) {
-      console.error('Error updating user status:', error);
-    }
-  };
-
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
