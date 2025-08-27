@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { X, Euro, Star, Save, Briefcase, FileText, MapPin, Clock } from 'lucide-react';
+import { X, Euro, Star, Save } from 'lucide-react';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 interface CreateJobPageProps {
   isDark: boolean;
-  user: any;
+  user: User;
   onBack: () => void;
 }
 
@@ -72,8 +73,9 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, onBack }) =
         onBack();
       }, 2000);
 
-    } catch (error: any) {
-      setError(error.message || 'Fehler beim Erstellen des Jobs');
+    } catch (error) {
+      const err = error as { message?: string };
+      setError(err.message || 'Fehler beim Erstellen des Jobs');
     } finally {
       setLoading(false);
     }

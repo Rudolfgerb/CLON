@@ -1,13 +1,22 @@
 import React, { useState } from 'react';
-import { User, CreditCard, HelpCircle, LogOut, Settings, Star, Crown, Euro, X, Zap, Calculator } from 'lucide-react';
+import { User, CreditCard, HelpCircle, LogOut, Settings, Star, Crown, X, Zap, Calculator, Shield } from 'lucide-react';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import PremiumModal from './PremiumModal';
-import { COMMISSION_RATES, STRIPE_PRODUCTS } from '../stripe-config';
+import { STRIPE_PRODUCTS } from '../stripe-config';
+
+interface Profile {
+  id: string;
+  full_name?: string;
+  bio?: string;
+  website?: string;
+  premium?: boolean;
+}
 
 interface MoreMenuProps {
   isDark: boolean;
-  user: any;
-  userProfile: any;
+  user: SupabaseUser;
+  userProfile: Profile | null;
   onToggleTheme: () => void;
   onShowAdmin: () => void;
 }
@@ -40,8 +49,9 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
       if (error) throw error;
       setMessage('Profil erfolgreich aktualisiert!');
       setTimeout(() => setMessage(''), 3000);
-    } catch (error: any) {
-      setMessage('Fehler: ' + error.message);
+    } catch (error) {
+      const err = error as { message?: string };
+      setMessage('Fehler: ' + (err.message || 'Unbekannt'));
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, AlertTriangle } from 'lucide-react';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 interface AdminAuthProps {
-  user: any;
+  user: User | null;
   children: React.ReactNode;
   isDark: boolean;
 }
@@ -13,11 +14,7 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ user, children, isDark }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    checkAdminStatus();
-  }, [user]);
-
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     if (!user) {
       setIsAdmin(false);
       setLoading(false);
@@ -30,14 +27,18 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ user, children, isDark }) => {
 
       if (error) throw error;
       setIsAdmin(data);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error checking admin status:', error);
       setError('Fehler beim Überprüfen der Admin-Berechtigung');
       setIsAdmin(false);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    checkAdminStatus();
+  }, [checkAdminStatus]);
 
   if (loading) {
     return (

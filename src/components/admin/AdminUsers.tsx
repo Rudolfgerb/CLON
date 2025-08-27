@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, Search, Crown, Shield, Mail, Calendar, 
-  Edit, Trash2, CheckCircle, XCircle, Star, Euro
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Users, Search, Crown, Shield,
+  CheckCircle, XCircle, Star
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -28,11 +28,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ isDark }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -46,7 +42,11 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ isDark }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {

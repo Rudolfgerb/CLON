@@ -97,7 +97,7 @@ export interface Notification {
   type: string;
   title: string;
   message: string;
-  data: any;
+  data: Record<string, unknown>;
   read: boolean;
   created_at: string;
   priority?: string;
@@ -173,7 +173,7 @@ export interface UserActivityLog {
   id: string;
   user_id: string;
   activity_type: string;
-  activity_data: any;
+  activity_data: Record<string, unknown>;
   ip_address: string | null;
   user_agent: string | null;
   created_at: string;

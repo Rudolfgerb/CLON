@@ -10,7 +10,7 @@ interface AdminCoursesProps {
 
 const AdminCourses: React.FC<AdminCoursesProps> = ({ isDark }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const categoryFilter = 'all';
 
   // Mock course data
   const courses = [

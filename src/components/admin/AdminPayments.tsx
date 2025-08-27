@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Euro, TrendingUp, DollarSign, CreditCard, 
-  Download, Filter, Calendar, ArrowUpRight, ArrowDownRight
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Euro, TrendingUp, DollarSign, CreditCard,
+  Download, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -30,11 +30,7 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ isDark }) => {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('30d');
 
-  useEffect(() => {
-    loadTransactions();
-  }, [dateRange]);
-
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       let query = supabase
         .from('commission_transactions')
@@ -62,7 +58,11 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ isDark }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange]);
+
+  useEffect(() => {
+    loadTransactions();
+  }, [loadTransactions]);
 
   const totalRevenue = transactions.reduce((sum, t) => sum + (t.commission_amount || 0), 0);
   const totalPayouts = transactions.reduce((sum, t) => sum + (t.net_amount || 0), 0);

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, MapPin, Clock, Euro, Star, Briefcase, Crown, Calculator, X } from 'lucide-react';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import JobApplicationModal from './JobApplicationModal';
 import { calculateJobCommission } from '../lib/stripe';
@@ -22,25 +23,33 @@ interface Job {
   created_at: string;
 }
 
+interface Profile {
+  id: string;
+  premium: boolean;
+}
+
 interface JobsPageProps {
   isDark: boolean;
-  user: any;
-  userProfile: any;
+  user: User;
+  userProfile: Profile | null;
 }
 
 const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'cash' | 'karma'>('all');
+  const filters = [
+    { id: 'all', label: 'Alle Jobs', icon: null },
+    { id: 'cash', label: 'Cash Jobs', icon: Euro },
+    { id: 'karma', label: 'Karma Jobs', icon: Star }
+  ] as const;
+  type FilterId = typeof filters[number]['id'];
+
+  const [selectedFilter, setSelectedFilter] = useState<FilterId>('all');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
 
-  useEffect(() => {
-    loadJobs();
-  }, []);
-
-  const loadJobs = async () => {
+  const loadJobs = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
@@ -55,7 +64,11 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -232,14 +245,10 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
 
           {/* Filter Tabs */}
           <div className="flex space-x-2 mb-6">
-            {[
-              { id: 'all', label: 'Alle Jobs', icon: null },
-              { id: 'cash', label: 'Cash Jobs', icon: Euro },
-              { id: 'karma', label: 'Karma Jobs', icon: Star }
-            ].map((filter) => (
+            {filters.map((filter) => (
               <button
                 key={filter.id}
-                onClick={() => setSelectedFilter(filter.id as any)}
+                onClick={() => setSelectedFilter(filter.id)}
                 className={`px-6 py-3 rounded-2xl font-semibold flex items-center space-x-2 ${
                   selectedFilter === filter.id
                     ? filter.id === 'cash'
