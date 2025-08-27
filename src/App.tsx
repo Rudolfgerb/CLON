@@ -41,39 +41,62 @@ function App() {
 
   const loadUserProfile = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      // Add retry logic with exponential backoff
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading profile:', error);
-        return;
-      }
+          if (error && error.code !== 'PGRST116') {
+            if (error.code === '42P17' && retries > 1) {
+              // RLS recursion error - wait and retry
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              retries--;
+              continue;
+            }
+            console.error('Error loading profile:', error);
+            setUserProfile(null);
+            break;
+          }
 
-      if (!data) {
-        // Create profile if it doesn't exist
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            id: userId,
-            email: user?.email || '',
-            full_name: user?.user_metadata?.full_name || 'Mutuus User',
-            karma: 100,
-            level: 1,
-            premium: false
-          })
-          .select()
-          .single();
+          if (!data) {
+            // Create profile if it doesn't exist
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert({
+                id: userId,
+                email: user?.email || '',
+                full_name: user?.user_metadata?.full_name || 'Mutuus User',
+                karma: 100,
+                level: 1,
+                premium: false
+              })
+              .select()
+              .single();
 
-        if (createError) {
-          console.error('Error creating profile:', createError);
-          return;
+            if (createError) {
+              console.error('Error creating profile:', createError);
+              return;
+            }
+            setUserProfile(newProfile);
+          } else {
+            setUserProfile(data);
+          }
+          break;
+        } catch (err) {
+          console.error('Network error:', err);
+          if (retries > 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            retries--;
+          } else {
+            setUserProfile(null);
+            break;
+          }
         }
-        setUserProfile(newProfile);
-      } else {
-        setUserProfile(data);
       }
     } catch (error) {
       console.error('Error in loadUserProfile:', error);
