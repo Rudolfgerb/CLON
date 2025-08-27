@@ -9,7 +9,95 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Types for our database tables
+// Types for new job system
+export interface JobCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  color: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JobPost {
+  id: string;
+  title: string;
+  description: string;
+  job_type: 'cash' | 'karma';
+  category_id: string;
+  location: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  tags: string[];
+  requirements: string | null;
+  deliverables: string;
+  estimated_hours: number;
+  deadline: string | null;
+  hourly_rate: number | null;
+  fixed_amount: number | null;
+  karma_reward: number | null;
+  additional_karma: number;
+  additional_cash: number;
+  status: 'active' | 'paused' | 'completed' | 'cancelled';
+  featured: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Relations
+  job_categories?: JobCategory;
+  profiles?: Profile;
+  job_media?: JobMedia[];
+  job_applications?: JobApplication[];
+}
+
+export interface JobMedia {
+  id: string;
+  job_id: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number | null;
+  is_title_image: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export interface JobApplication {
+  id: string;
+  job_id: string;
+  applicant_id: string;
+  message: string;
+  proposed_hourly_rate: number | null;
+  experience: string | null;
+  portfolio_url: string | null;
+  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+  employer_response: string | null;
+  read_by_employer: boolean;
+  read_by_applicant: boolean;
+  created_at: string;
+  updated_at: string;
+  responded_at: string | null;
+  // Relations
+  profiles?: Profile;
+  job_posts?: JobPost;
+}
+
+export interface JobReview {
+  id: string;
+  job_id: string;
+  application_id: string;
+  reviewer_id: string;
+  reviewee_id: string;
+  rating: number;
+  title: string | null;
+  comment: string | null;
+  would_work_again: boolean | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Legacy types for compatibility
 export interface Course {
   id: string;
   title: string;
@@ -23,72 +111,21 @@ export interface Course {
   updated_at: string;
 }
 
-export interface Lesson {
+export interface Profile {
   id: string;
-  course_id: string;
-  title: string;
-  description: string | null;
-  content: string | null;
-  code_example: string | null;
-  karma_reward: number;
-  order_index: number;
-  is_published: boolean;
-  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
-  estimated_duration: number | null;
+  email: string;
+  full_name: string | null;
+  karma: number;
+  level: number;
+  premium: boolean;
+  role: string;
+  bio: string | null;
+  website: string | null;
+  last_login: string | null;
+  is_active: boolean;
+  premium_expires_at: string | null;
   created_at: string;
   updated_at: string;
-}
-
-export interface LessonMedia {
-  id: string;
-  lesson_id: string;
-  file_name: string;
-  file_url: string;
-  file_type: string;
-  created_at: string;
-}
-
-export interface Quiz {
-  id: string;
-  course_id: string;
-  question: string;
-  options: string[];
-  correct_answer: number;
-  order_index: number;
-  created_at: string;
-}
-
-export interface UserProgress {
-  id: string;
-  user_id: string;
-  lesson_id: string;
-  completed: boolean;
-  completed_at: string | null;
-}
-
-export interface UserQuizResult {
-  id: string;
-  user_id: string;
-  course_id: string;
-  score: number;
-  total_questions: number;
-  karma_earned: number;
-  completed_at: string;
-}
-
-export interface Application {
-  id: string;
-  job_id: string;
-  applicant_id: string;
-  message: string;
-  hourly_rate: number | null;
-  estimated_hours: number | null;
-  experience: string;
-  portfolio: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  created_at: string;
-  updated_at: string;
-  read?: boolean; // Add this optional field
 }
 
 export interface Notification {

@@ -1,17 +1,8 @@
 import React, { useState } from 'react';
 import { X, Send, Star, AlertTriangle, Crown, Calculator } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, JobPost } from '../lib/supabase';
 import { calculateJobCommission } from '../lib/stripe';
-
-interface Job {
-  id: string;
-  job_type: 'cash' | 'karma';
-  karma_reward?: number;
-  fixed_amount?: number;
-  hourly_rate: number;
-  estimated_hours: number;
-}
 
 interface Profile {
   id: string;
@@ -23,7 +14,7 @@ interface JobApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   isDark: boolean;
-  job: Job | null;
+  job: JobPost | null;
   user: User;
   userProfile: Profile | null;
   onSuccess: () => void;
@@ -55,17 +46,17 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
 
     try {
       // Check karma for karma jobs
-      if (job.job_type === 'karma' && userProfile.karma < job.karma_reward) {
+      if (job.job_type === 'karma' && userProfile.karma < (job.karma_reward || 0)) {
         throw new Error('Nicht genügend Karma für diese Bewerbung');
       }
 
       const { error } = await supabase
-        .from('applications')
+        .from('job_applications')
         .insert({
           job_id: job.id,
           applicant_id: user.id,
           message: applicationData.message,
-          hourly_rate: applicationData.hourlyRate ? parseFloat(applicationData.hourlyRate) : null,
+          proposed_hourly_rate: applicationData.hourlyRate ? parseFloat(applicationData.hourlyRate) : null,
           experience: applicationData.experience,
           status: 'pending'
         });
@@ -83,11 +74,10 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
     }
   };
 
-  const jobAmount = job.fixed_amount || (job.hourly_rate * job.estimated_hours);
+  const jobAmount = job.fixed_amount || ((job.hourly_rate || 0) * job.estimated_hours);
   const commission = job.job_type === 'cash' ? calculateJobCommission(jobAmount, userProfile?.premium || false) : null;
 
   // Check if user has enough karma for karma jobs
-  const hasEnoughKarma = job.job_type === 'karma' ? (userProfile?.karma || 0) >= (job.karma_reward || 0) : true;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

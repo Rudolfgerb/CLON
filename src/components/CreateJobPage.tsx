@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Euro, Star, Save, ChevronLeft, ChevronRight, Upload, Calendar, Clock, Image, Trash2 } from 'lucide-react';
+import { X, Euro, Star, Save, ChevronLeft, ChevronRight, Upload, Calendar, Clock, Image, Trash2, FileText } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, JobCategory } from '../lib/supabase';
 
 interface CreateJobPageProps {
   isDark: boolean;
@@ -13,6 +13,7 @@ interface CreateJobPageProps {
 const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, onBack }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedJobType, setSelectedJobType] = useState<'cash' | 'karma'>(jobType || 'cash');
+  const [categories, setCategories] = useState<JobCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -21,7 +22,23 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
     if (jobType) {
       setSelectedJobType(jobType);
     }
+    loadCategories();
   }, [jobType]);
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('job_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
 
   const [jobData, setJobData] = useState({
     // Schritt 1: Grundlagen
@@ -31,7 +48,7 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
     titleImageIndex: 0, // Index des Titelbildes
     
     // Schritt 2: Details
-    category: 'development',
+    categoryId: '',
     location: 'remote',
     difficulty: 'easy',
     tags: '',
@@ -53,17 +70,6 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
     additionalCash: '', // Für Karma Jobs
     offerBothPayments: false // Toggle für kombinierte Bezahlung
   });
-
-  const categories = [
-    { id: 'development', label: 'Entwicklung' },
-    { id: 'design', label: 'Design' },
-    { id: 'writing', label: 'Texte' },
-    { id: 'marketing', label: 'Marketing' },
-    { id: 'data', label: 'Datenanalyse' },
-    { id: 'consulting', label: 'Beratung' },
-    { id: 'translation', label: 'Übersetzung' },
-    { id: 'other', label: 'Sonstiges' }
-  ];
 
   const difficulties = [
     { id: 'easy', label: 'Einfach', color: 'text-green-500' },
@@ -153,9 +159,15 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
       const jobPayload = {
         title: jobData.title,
         description: jobData.description,
-        category: jobData.category,
-        location: jobData.location,
         job_type: selectedJobType,
+        category_id: jobData.categoryId,
+        location: jobData.location,
+        difficulty: jobData.difficulty,
+        tags: tagsArray,
+        requirements: jobData.requirements || null,
+        deliverables: jobData.deliverables,
+        estimated_hours: parseInt(jobData.estimatedHours),
+        deadline: deadline.toISOString(),
         
         // Haupt-Bezahlung
         hourly_rate: selectedJobType === 'cash' && jobData.hourlyRate ? parseFloat(jobData.hourlyRate) : null,
@@ -166,18 +178,12 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
         additional_karma: selectedJobType === 'cash' && jobData.additionalKarma ? parseInt(jobData.additionalKarma) : null,
         additional_cash: selectedJobType === 'karma' && jobData.additionalCash ? parseFloat(jobData.additionalCash) : null,
         
-        estimated_hours: parseInt(jobData.estimatedHours),
-        difficulty: jobData.difficulty,
-        tags: tagsArray,
-        requirements: jobData.requirements,
-        deliverables: jobData.deliverables,
-        deadline: deadline.toISOString(),
         status: 'active',
         created_by: user.id
       };
 
       const { error: insertError } = await supabase
-        .from('jobs')
+        .from('job_posts')
         .insert(jobPayload);
 
       if (insertError) throw insertError;
@@ -396,14 +402,16 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
                   Kategorie *
                 </label>
                 <select
-                  value={jobData.category}
-                  onChange={(e) => setJobData(prev => ({ ...prev, category: e.target.value }))}
+                  value={jobData.categoryId}
+                  onChange={(e) => setJobData(prev => ({ ...prev, categoryId: e.target.value }))}
                   className={`w-full px-4 py-3 rounded-xl border ${
                     isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
+                  required
                 >
+                  <option value="">Kategorie wählen</option>
                   {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.label}</option>
+                    <option key={cat.id} value={cat.id}>{cat.description || cat.name}</option>
                   ))}
                 </select>
               </div>
@@ -705,7 +713,7 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
                 <div className="flex justify-between">
                   <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Kategorie:</span>
                   <span className={isDark ? 'text-white' : 'text-gray-900'}>
-                    {categories.find(c => c.id === jobData.category)?.label}
+                    {categories.find(c => c.id === jobData.categoryId)?.description || 'Nicht ausgewählt'}
                   </span>
                 </div>
                 <div className="flex justify-between">

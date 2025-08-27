@@ -1,27 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, MapPin, Clock, Euro, Star, Briefcase, Crown, Calculator, X } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, JobPost } from '../lib/supabase';
 import JobApplicationModal from './JobApplicationModal';
 import { calculateJobCommission } from '../lib/stripe';
-
-interface Job {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  location: string;
-  job_type: 'cash' | 'karma';
-  hourly_rate: number | null;
-  estimated_hours: number | null;
-  fixed_amount: number | null;
-  karma_reward: number | null;
-  difficulty: 'easy' | 'medium' | 'hard';
-  tags: string[];
-  status: string;
-  created_by: string;
-  created_at: string;
-}
 
 interface Profile {
   id: string;
@@ -35,7 +17,7 @@ interface JobsPageProps {
 }
 
 const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const filters = [
@@ -46,14 +28,37 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
   type FilterId = typeof filters[number]['id'];
 
   const [selectedFilter, setSelectedFilter] = useState<FilterId>('all');
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
 
   const loadJobs = useCallback(async () => {
     try {
       const { data, error } = await supabase
-        .from('jobs')
-        .select('*')
+        .from('job_posts')
+        .select(`
+          *,
+          job_categories (
+            name,
+            description,
+            icon,
+            color
+          ),
+          profiles (
+            full_name,
+            premium
+          ),
+          job_media (
+            id,
+            file_name,
+            file_path,
+            file_type,
+            is_title_image
+          ),
+          job_applications!job_applications_job_id_fkey (
+            id,
+            status
+          )
+        `)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
@@ -79,7 +84,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
 
   const formatPayment = (job: Job) => {
     if (job.job_type === 'cash') {
-      const amount = job.fixed_amount || (job.hourly_rate * job.estimated_hours);
+      const amount = job.fixed_amount || ((job.hourly_rate || 0) * job.estimated_hours);
       return `€${amount.toFixed(2)}`;
     }
     return `${job.karma_reward} Karma`;
@@ -87,7 +92,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
 
   const getNetPayment = (job: Job) => {
     if (job.job_type === 'cash') {
-      const amount = job.fixed_amount || (job.hourly_rate * job.estimated_hours);
+      const amount = job.fixed_amount || ((job.hourly_rate || 0) * job.estimated_hours);
       const commission = calculateJobCommission(amount, userProfile?.premium || false);
       return `€${commission.netAmount.toFixed(2)} netto`;
     }
@@ -317,6 +322,25 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
                           {job.estimated_hours}h
                         </div>
                       </div>
+
+                      {/* Tags */}
+                      {job.tags && job.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {job.tags.slice(0, 3).map((tag, index) => (
+                            <span
+                              key={index}
+                              className={`px-2 py-1 rounded-full text-xs ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-700'}`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {job.tags.length > 3 && (
+                            <span className={`px-2 py-1 rounded-full text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                              +{job.tags.length - 3} mehr
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Premium Badge for better rates */}
                       {job.job_type === 'cash' && userProfile?.premium && (
