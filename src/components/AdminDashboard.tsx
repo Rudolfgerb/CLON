@@ -49,13 +49,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const loadAdminStats = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('admin_stats')
-        .select('*')
-        .single();
+      // Get admin statistics from multiple queries since we don't have a view yet
+      const [usersResult, jobsResult, paymentsResult] = await Promise.all([
+        supabase.from('profiles').select('id, created_at, premium'),
+        supabase.from('jobs').select('id, created_at, status'),
+        supabase.from('commission_transactions').select('commission_amount, created_at').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      ]);
 
-      if (error) throw error;
-      setStats(data);
+      const totalUsers = usersResult.data?.length || 0;
+      const newUsers30d = usersResult.data?.filter(u => 
+        new Date(u.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      ).length || 0;
+      const activeJobs = jobsResult.data?.filter(j => j.status === 'active').length || 0;
+      const newJobs30d = jobsResult.data?.filter(j => 
+        new Date(j.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      ).length || 0;
+      const premiumUsers = usersResult.data?.filter(u => u.premium).length || 0;
+      const commission30d = paymentsResult.data?.reduce((sum, p) => sum + (p.commission_amount || 0), 0) || 0;
+
+      setStats({
+        total_users: totalUsers,
+        new_users_30d: newUsers30d,
+        active_jobs: activeJobs,
+        new_jobs_30d: newJobs30d,
+        premium_users: premiumUsers,
+        commission_30d: commission30d,
+        total_wallet_balance: 0,
+        new_applications_30d: 0
+      });
     } catch (error) {
       console.error('Error loading admin stats:', error);
     } finally {
