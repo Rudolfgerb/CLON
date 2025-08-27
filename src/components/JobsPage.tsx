@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MapPin, Clock, Euro, Star, Briefcase, X, Send, User, AlertCircle } from 'lucide-react';
+import { Search, MapPin, Clock, Euro, Star, Briefcase, Crown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import JobApplicationModal from './JobApplicationModal';
+import { calculateJobCommission } from '../lib/stripe';
 
 interface Job {
   id: string;
@@ -23,21 +25,16 @@ interface Job {
 interface JobsPageProps {
   isDark: boolean;
   user: any;
+  userProfile: any;
 }
 
-const JobsPage: React.FC<JobsPageProps> = ({ isDark, user }) => {
+const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'cash' | 'karma'>('all');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
-  const [applicationData, setApplicationData] = useState({
-    message: '',
-    hourlyRate: '',
-    experience: ''
-  });
-  const [applicationLoading, setApplicationLoading] = useState(false);
 
   useEffect(() => {
     loadJobs();
@@ -69,37 +66,11 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user }) => {
 
   const formatPayment = (job: Job) => {
     if (job.job_type === 'cash') {
-      return job.fixed_amount ? `€${job.fixed_amount}` : `€${job.hourly_rate}/h`;
+      const amount = job.fixed_amount || (job.hourly_rate * job.estimated_hours);
+      const commission = calculateJobCommission(amount, userProfile?.premium || false);
+      return `€${commission.netAmount.toFixed(2)}`;
     }
     return `${job.karma_reward} Karma`;
-  };
-
-  const handleApply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedJob) return;
-
-    setApplicationLoading(true);
-    try {
-      const { error } = await supabase
-        .from('applications')
-        .insert({
-          job_id: selectedJob.id,
-          applicant_id: user.id,
-          message: applicationData.message,
-          hourly_rate: applicationData.hourlyRate ? parseFloat(applicationData.hourlyRate) : null,
-          experience: applicationData.experience,
-          status: 'pending'
-        });
-
-      if (error) throw error;
-      
-      setShowApplicationModal(false);
-      setApplicationData({ message: '', hourlyRate: '', experience: '' });
-    } catch (error: any) {
-      console.error('Error applying:', error);
-    } finally {
-      setApplicationLoading(false);
-    }
   };
 
   if (loading) {
@@ -112,8 +83,21 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user }) => {
 
   return (
     <>
+      {/* Application Modal */}
+      <JobApplicationModal
+        isOpen={showApplicationModal}
+        onClose={() => setShowApplicationModal(false)}
+        isDark={isDark}
+        job={selectedJob}
+        user={user}
+        userProfile={userProfile}
+        onSuccess={() => {
+          setSelectedJob(null);
+        }}
+      />
+
       {/* Job Details Modal */}
-      {selectedJob && !showApplicationModal && (
+      {selectedJob && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border shadow-2xl`}>
             <div className="p-6">
@@ -163,85 +147,56 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user }) => {
                 )}
               </div>
 
-              <button
-                onClick={() => setShowApplicationModal(true)}
-                className={`w-full py-4 rounded-xl font-semibold transition-transform duration-300 ${
-                  selectedJob.job_type === 'cash'
-                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                    : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white'
-                }`}
-              >
-                Jetzt bewerben
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Application Modal */}
-      {showApplicationModal && selectedJob && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-3xl w-full max-w-md border shadow-2xl`}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Bewerbung senden
-                </h2>
-                <button
-                  onClick={() => setShowApplicationModal(false)}
-                  className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
-                >
-                  <X className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-                </button>
-              </div>
-
-              <form onSubmit={handleApply} className="space-y-4">
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Nachricht
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={applicationData.message}
-                    onChange={(e) => setApplicationData(prev => ({ ...prev, message: e.target.value }))}
-                    placeholder="Warum sind Sie der richtige Kandidat?"
-                    className={`w-full px-4 py-3 rounded-xl border ${
-                      isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
-                    }`}
-                    required
-                  />
-                </div>
-
+              <div className="space-y-3">
                 {selectedJob.job_type === 'cash' && (
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Ihr Stundensatz (€)
-                    </label>
-                    <input
-                      type="number"
-                      value={applicationData.hourlyRate}
-                      onChange={(e) => setApplicationData(prev => ({ ...prev, hourlyRate: e.target.value }))}
-                      placeholder="25.00"
-                      className={`w-full px-4 py-3 rounded-xl border ${
-                        isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
-                      }`}
-                    />
+                  <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-gray-100'}`}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Zahlungsübersicht
+                      </span>
+                      {userProfile?.premium && <Crown className="w-4 h-4 text-yellow-500" />}
+                    </div>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span>Brutto:</span>
+                        <span>€{(selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours)).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Gebühren ({userProfile?.premium ? '5%' : '9.8%'}):</span>
+                        <span className="text-red-500">
+                          -€{calculateJobCommission(
+                            selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours),
+                            userProfile?.premium || false
+                          ).commission.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-green-500">
+                        <span>Sie erhalten:</span>
+                        <span>
+                          €{calculateJobCommission(
+                            selectedJob.fixed_amount || (selectedJob.hourly_rate * selectedJob.estimated_hours),
+                            userProfile?.premium || false
+                          ).netAmount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
-
+                
                 <button
-                  type="submit"
-                  disabled={applicationLoading}
-                  className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 ${
+                  onClick={() => {
+                    setSelectedJob(null);
+                    setShowApplicationModal(true);
+                  }}
+                  className={`w-full py-4 rounded-xl font-semibold transition-transform duration-300 ${
                     selectedJob.job_type === 'cash'
                       ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
                       : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white'
-                  } disabled:opacity-50`}
+                  }`}
                 >
-                  <Send className="w-5 h-5" />
-                  <span>{applicationLoading ? 'Wird gesendet...' : 'Bewerbung senden'}</span>
+                  Jetzt bewerben
                 </button>
-              </form>
+              </div>
             </div>
           </div>
         </div>

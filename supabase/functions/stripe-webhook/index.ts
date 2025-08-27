@@ -60,12 +60,12 @@ async function handleEvent(event: Stripe.Event) {
     return;
   }
 
-  if (!('customer' in stripeData)) {
+  // for one time payments, we only listen for the checkout.session.completed event
+  if (event.type === 'payment_intent.succeeded' && event.data.object.invoice === null) {
     return;
   }
 
-  // for one time payments, we only listen for the checkout.session.completed event
-  if (event.type === 'payment_intent.succeeded' && event.data.object.invoice === null) {
+  if (!('customer' in stripeData)) {
     return;
   }
 
@@ -98,7 +98,27 @@ async function handleEvent(event: Stripe.Event) {
           amount_subtotal,
           amount_total,
           currency,
+          metadata,
         } = stripeData as Stripe.Checkout.Session;
+
+        // Handle different types of one-time payments
+        if (metadata?.product_type === 'karma_1000') {
+          // Process karma purchase
+          const { data: customer } = await supabase
+            .from('stripe_customers')
+            .select('user_id')
+            .eq('customer_id', customerId)
+            .single();
+
+          if (customer) {
+            // Add karma to user profile
+            await supabase.rpc('process_karma_purchase', {
+              user_id: customer.user_id,
+              karma_amount: 1000,
+              payment_amount: (amount_total || 0) / 100 // Convert from cents
+            });
+          }
+        }
 
         // Insert the order into the stripe_orders table
         const { error: orderError } = await supabase.from('stripe_orders').insert({
@@ -110,6 +130,8 @@ async function handleEvent(event: Stripe.Event) {
           currency,
           payment_status,
           status: 'completed', // assuming we want to mark it as completed since payment is successful
+          product_type: metadata?.product_type || 'unknown',
+          metadata: metadata || {}
         });
 
         if (orderError) {
@@ -184,6 +206,42 @@ async function syncCustomerFromStripe(customerId: string) {
       throw new Error('Failed to sync subscription in database');
     }
     console.info(`Successfully synced subscription for customer: ${customerId}`);
+      
+      // Update user premium status if subscription is active
+      if (subscription.status === 'active') {
+        const { data: customer } = await supabase
+          .from('stripe_customers')
+          .select('user_id')
+          .eq('customer_id', customerId)
+          .single();
+
+        if (customer) {
+          await supabase
+            .from('profiles')
+            .update({
+              premium: true,
+              premium_expires_at: new Date(subscription.current_period_end * 1000).toISOString()
+            })
+            .eq('id', customer.user_id);
+        }
+      } else if (['canceled', 'unpaid', 'past_due'].includes(subscription.status)) {
+        // Remove premium status if subscription is not active
+        const { data: customer } = await supabase
+          .from('stripe_customers')
+          .select('user_id')
+          .eq('customer_id', customerId)
+          .single();
+
+        if (customer) {
+          await supabase
+            .from('profiles')
+            .update({
+              premium: false,
+              premium_expires_at: null
+            })
+            .eq('id', customer.user_id);
+        }
+      }
   } catch (error) {
     console.error(`Failed to sync subscription for customer ${customerId}:`, error);
     throw error;

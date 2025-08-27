@@ -1,4 +1,5 @@
 import { loadStripe } from '@stripe/stripe-js';
+import { supabase } from './supabase';
 
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
@@ -10,31 +11,42 @@ export const stripe = loadStripe(stripePublishableKey);
 
 // Product configurations
 export const STRIPE_PRODUCTS = {
-  premium_monthly: {
-    priceId: 'price_premium_monthly',
-    name: 'Premium Monatlich',
-    price: '€9.99/Monat',
+  premium: {
+    priceId: 'price_premium_monthly_1999',
+    name: 'Premium Mitgliedschaft',
+    price: '€19.99',
+    period: '/Monat',
     features: [
+      'Nur 5% Gebühren statt 9.8%',
       'Unbegrenzte Job-Bewerbungen',
       'Premium Kurse',
       'Prioritäts-Support',
       'Erweiterte Analytics'
     ]
   },
-  premium_yearly: {
-    priceId: 'price_premium_yearly',
-    name: 'Premium Jährlich',
-    price: '€99.99/Jahr',
+  karma_1000: {
+    priceId: 'price_karma_1000_299',
+    name: '1000 Karma Punkte',
+    price: '€2.99',
+    karma: 1000,
     features: [
-      'Alle Premium Features',
-      '2 Monate kostenlos',
-      'Exklusive Workshops',
-      'Persönlicher Mentor'
+      '1000 Karma Punkte',
+      'Sofort verfügbar',
+      'Für Community Jobs verwenden'
     ]
   }
 };
 
-export const createCheckoutSession = async (priceId: string, mode: 'payment' | 'subscription' = 'subscription') => {
+export const COMMISSION_RATES = {
+  regular: 0.098, // 9.8%
+  premium: 0.05   // 5%
+};
+
+export const createCheckoutSession = async (
+  priceId: string, 
+  mode: 'payment' | 'subscription' = 'payment',
+  metadata?: Record<string, string>
+) => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     
@@ -51,8 +63,9 @@ export const createCheckoutSession = async (priceId: string, mode: 'payment' | '
       body: JSON.stringify({
         price_id: priceId,
         mode,
-        success_url: `${window.location.origin}/success`,
-        cancel_url: `${window.location.origin}/cancel`,
+        success_url: `${window.location.origin}?success=true`,
+        cancel_url: `${window.location.origin}?canceled=true`,
+        metadata
       }),
     });
 
@@ -73,4 +86,15 @@ export const createCheckoutSession = async (priceId: string, mode: 'payment' | '
   }
 };
 
-import { supabase } from './supabase';
+export const calculateJobCommission = (amount: number, isPremium: boolean) => {
+  const rate = isPremium ? COMMISSION_RATES.premium : COMMISSION_RATES.regular;
+  const commission = amount * rate;
+  const netAmount = amount - commission;
+  
+  return {
+    grossAmount: amount,
+    commission,
+    netAmount,
+    commissionRate: rate * 100
+  };
+};

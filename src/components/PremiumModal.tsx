@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Crown, Check, Loader2 } from 'lucide-react';
+import { X, Crown, Check, Loader2, Star, Zap } from 'lucide-react';
 import { STRIPE_PRODUCTS, createCheckoutSession } from '../lib/stripe';
 
 interface PremiumModalProps {
@@ -14,12 +14,15 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, isDark }) 
 
   if (!isOpen) return null;
 
-  const handleUpgrade = async (priceId: string) => {
-    setLoading(priceId);
+  const handlePurchase = async (productKey: string, mode: 'payment' | 'subscription') => {
+    const product = STRIPE_PRODUCTS[productKey as keyof typeof STRIPE_PRODUCTS];
+    setLoading(product.priceId);
     setError('');
 
     try {
-      await createCheckoutSession(priceId, 'subscription');
+      await createCheckoutSession(product.priceId, mode, { 
+        product_type: productKey 
+      });
     } catch (error: any) {
       setError(error.message || 'Fehler beim Erstellen der Checkout-Session');
     } finally {
@@ -35,7 +38,7 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, isDark }) 
             <div className="flex items-center space-x-3">
               <Crown className="w-8 h-8 text-yellow-500" />
               <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Premium Upgrade
+                Premium & Karma
               </h2>
             </div>
             <button
@@ -46,83 +49,137 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, isDark }) 
             </button>
           </div>
 
-          <p className={`${isDark ? 'text-gray-300' : 'text-gray-600'} mb-8 text-center`}>
-            Schalte erweiterte Features frei und maximiere dein Potenzial auf Mutuus
-          </p>
-
           {error && (
             <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mb-6">
               <p className="text-red-200 text-sm">{error}</p>
             </div>
           )}
 
-          <div className="grid gap-6">
-            {Object.entries(STRIPE_PRODUCTS).map(([key, product]) => (
-              <div
-                key={key}
-                className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-2xl p-6 border ${
-                  key === 'premium_yearly' ? 'ring-2 ring-yellow-500/50' : ''
-                }`}
-              >
-                {key === 'premium_yearly' && (
-                  <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-4">
-                    BELIEBTESTE WAHL
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between mb-4">
+          <div className="space-y-6">
+            {/* Premium Subscription */}
+            <div className={`${isDark ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-500/30' : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200'} rounded-2xl p-6 border-2`}>
+              <div className="flex items-center space-x-3 mb-4">
+                <Crown className="w-8 h-8 text-yellow-500" />
+                <div>
                   <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {product.name}
+                    {STRIPE_PRODUCTS.premium.name}
                   </h3>
-                  <div className="text-right">
-                    <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {product.price}
-                    </div>
-                    {key === 'premium_yearly' && (
-                      <div className="text-sm text-green-500 font-medium">2 Monate gratis</div>
-                    )}
-                  </div>
+                  <p className="text-yellow-600 font-medium">Spare bei jeder Zahlung!</p>
                 </div>
-
-                <ul className="space-y-3 mb-6">
-                  {product.features.map((feature, index) => (
-                    <li key={index} className="flex items-center space-x-3">
-                      <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                      <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => handleUpgrade(product.priceId)}
-                  disabled={loading === product.priceId}
-                  className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all ${
-                    key === 'premium_yearly'
-                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:scale-105'
-                      : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:scale-105'
-                  } disabled:opacity-50 disabled:scale-100`}
-                >
-                  {loading === product.priceId ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Wird geladen...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Crown className="w-5 h-5" />
-                      <span>Jetzt upgraden</span>
-                    </>
-                  )}
-                </button>
               </div>
-            ))}
+
+              <div className="mb-4">
+                <div className="flex items-baseline space-x-2">
+                  <span className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {STRIPE_PRODUCTS.premium.price}
+                  </span>
+                  <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {STRIPE_PRODUCTS.premium.period}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-4 mt-2 text-sm">
+                  <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                    Normal: 9.8% Gebühren
+                  </span>
+                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                    Premium: nur 5% Gebühren
+                  </span>
+                </div>
+              </div>
+
+              <ul className="space-y-2 mb-6">
+                {STRIPE_PRODUCTS.premium.features.map((feature, index) => (
+                  <li key={index} className="flex items-center space-x-3">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {feature}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => handlePurchase('premium', 'subscription')}
+                disabled={loading === STRIPE_PRODUCTS.premium.priceId}
+                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:scale-105 transition-all disabled:opacity-50 disabled:scale-100"
+              >
+                {loading === STRIPE_PRODUCTS.premium.priceId ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Wird geladen...</span>
+                  </>
+                ) : (
+                  <>
+                    <Crown className="w-5 h-5" />
+                    <span>Premium werden</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Karma Package */}
+            <div className={`${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'} rounded-2xl p-6 border`}>
+              <div className="flex items-center space-x-3 mb-4">
+                <Star className="w-8 h-8 text-purple-500" />
+                <div>
+                  <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {STRIPE_PRODUCTS.karma_1000.name}
+                  </h3>
+                  <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Für Community Jobs verwenden
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-6 h-6 text-purple-500" />
+                  <span className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    1000 Karma
+                  </span>
+                </div>
+                <div className="text-right">
+                  <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {STRIPE_PRODUCTS.karma_1000.price}
+                  </div>
+                  <div className="text-sm text-purple-500">Einmalzahlung</div>
+                </div>
+              </div>
+
+              <ul className="space-y-2 mb-6">
+                {STRIPE_PRODUCTS.karma_1000.features.map((feature, index) => (
+                  <li key={index} className="flex items-center space-x-3">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {feature}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => handlePurchase('karma_1000', 'payment')}
+                disabled={loading === STRIPE_PRODUCTS.karma_1000.priceId}
+                className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:scale-105 transition-all disabled:opacity-50 disabled:scale-100"
+              >
+                {loading === STRIPE_PRODUCTS.karma_1000.priceId ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Wird geladen...</span>
+                  </>
+                ) : (
+                  <>
+                    <Star className="w-5 h-5" />
+                    <span>Karma kaufen</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           <div className={`mt-6 p-4 rounded-xl ${isDark ? 'bg-slate-700/50' : 'bg-gray-100'}`}>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} text-center`}>
-              Sichere Zahlung über Stripe • Jederzeit kündbar • 30 Tage Geld-zurück-Garantie
+              Sichere Zahlung über Stripe • SSL-verschlüsselt • Sofort verfügbar
             </p>
           </div>
         </div>

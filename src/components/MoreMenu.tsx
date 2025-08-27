@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { User, CreditCard, HelpCircle, LogOut, Settings, Star, Crown, Euro, X } from 'lucide-react';
+import { User, CreditCard, HelpCircle, LogOut, Settings, Star, Crown, Euro, X, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import PremiumModal from './PremiumModal';
 
 interface MoreMenuProps {
   isDark: boolean;
@@ -11,6 +12,7 @@ interface MoreMenuProps {
 
 const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggleTheme }) => {
   const [showProfile, setShowProfile] = useState(false);
+  const [showPremium, setShowPremium] = useState(false);
   const [profileData, setProfileData] = useState({
     full_name: userProfile?.full_name || '',
     bio: userProfile?.bio || '',
@@ -137,9 +139,9 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
     },
     {
       icon: CreditCard,
-      label: 'Premium Upgrade',
-      description: 'Erweiterte Features',
-      onClick: () => {},
+      label: userProfile?.premium ? 'Premium Aktiv' : 'Premium Upgrade',
+      description: userProfile?.premium ? 'Nur 5% Gebühren' : 'Weniger Gebühren zahlen',
+      onClick: () => setShowPremium(true),
       color: 'text-yellow-500'
     },
     {
@@ -159,6 +161,13 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
   ];
 
   return (
+    <>
+      <PremiumModal
+        isOpen={showPremium}
+        onClose={() => setShowPremium(false)}
+        isDark={isDark}
+      />
+      
     <div className="flex-1 overflow-y-auto pb-32">
       <div className="px-6 py-6">
         <div className="mb-8">
@@ -171,8 +180,13 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
         {/* User Info */}
         <div className={`${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl p-6 border mb-6`}>
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+              userProfile?.premium 
+                ? 'bg-gradient-to-br from-yellow-500 to-orange-500' 
+                : 'bg-gradient-to-br from-blue-500 to-purple-500'
+            }`}>
               <User className="w-8 h-8 text-white" />
+              {userProfile?.premium && <Crown className="w-4 h-4 text-white absolute translate-x-6 -translate-y-6" />}
             </div>
             <div>
               <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -186,6 +200,11 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
                 <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   {userProfile?.karma || 0} Karma
                 </span>
+                {userProfile?.premium && (
+                  <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                    PREMIUM
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -193,19 +212,29 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <button className="group relative overflow-hidden bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300">
+          <button 
+            onClick={() => setShowPremium(true)}
+            className="group relative overflow-hidden bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300"
+          >
             <Crown className="w-8 h-8 mb-3" />
             <div className="text-left">
-              <div className="font-bold text-lg">Premium</div>
-              <div className="text-sm opacity-90">Upgrade jetzt</div>
+              <div className="font-bold text-lg">
+                {userProfile?.premium ? 'Premium' : 'Upgrade'}
+              </div>
+              <div className="text-sm opacity-90">
+                {userProfile?.premium ? '5% Gebühren' : '€19.99/Monat'}
+              </div>
             </div>
           </button>
 
-          <button className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300">
-            <Euro className="w-8 h-8 mb-3" />
+          <button 
+            onClick={() => setShowPremium(true)}
+            className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white hover:scale-[1.02] transition-all duration-300"
+          >
+            <Zap className="w-8 h-8 mb-3" />
             <div className="text-left">
-              <div className="font-bold text-lg">Auszahlung</div>
-              <div className="text-sm opacity-90">Geld abheben</div>
+              <div className="font-bold text-lg">Karma kaufen</div>
+              <div className="text-sm opacity-90">1000 für €2.99</div>
             </div>
           </button>
         </div>
@@ -245,6 +274,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ isDark, user, userProfile, onToggle
         </button>
       </div>
     </div>
+    </>
   );
 };
 

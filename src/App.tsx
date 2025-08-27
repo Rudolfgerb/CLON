@@ -101,7 +101,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'jobs':
-        return <JobsPage isDark={isDark} user={user} />;
+        return <JobsPage isDark={isDark} user={user} userProfile={userProfile} />;
       case 'campus':
         return <CampusPage isDark={isDark} />;
       case 'more':
