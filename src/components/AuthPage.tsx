@@ -44,19 +44,19 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
         setMessage('Registrierung erfolgreich! Sie können sich jetzt anmelden.');
         setIsLogin(true);
       }
-    } catch (error: any) {
-      // Handle specific Supabase error codes with user-friendly messages
-      if (error.message?.includes('Invalid login credentials') || 
-          error.code === 'invalid_credentials' ||
-          (error.status === 400 && error.body?.includes('invalid_credentials'))) {
+    } catch (error) {
+      const err = error as { message?: string; code?: string; status?: number; body?: string };
+      if (err.message?.includes('Invalid login credentials') ||
+          err.code === 'invalid_credentials' ||
+          (err.status === 400 && err.body?.includes('invalid_credentials'))) {
         setError('Invalid email or password. Please check your credentials or register if you don\'t have an account.');
-      } else if (error.message?.includes('User already registered')) {
+      } else if (err.message?.includes('User already registered')) {
         setError('This email is already registered. Please try logging in instead.');
-      } else if (error.message?.includes('Password should be at least 6 characters')) {
+      } else if (err.message?.includes('Password should be at least 6 characters')) {
         setError('Password must be at least 6 characters long.');
       } else {
         console.error('Auth error details:', error);
-        setError(error.message || 'An unexpected error occurred. Please try again.');
+        setError(err.message || 'An unexpected error occurred. Please try again.');
       }
     } finally {
       setLoading(false);

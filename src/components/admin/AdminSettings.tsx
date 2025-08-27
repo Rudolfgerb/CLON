@@ -42,8 +42,9 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ isDark }) => {
       
       setMessage('Einstellungen erfolgreich gespeichert!');
       setTimeout(() => setMessage(''), 3000);
-    } catch (error: any) {
-      setMessage('Fehler beim Speichern: ' + error.message);
+    } catch (error) {
+      const err = error as { message?: string };
+      setMessage('Fehler beim Speichern: ' + (err.message || 'Unbekannt'));
     } finally {
       setLoading(false);
     }

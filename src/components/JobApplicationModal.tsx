@@ -1,15 +1,31 @@
 import React, { useState } from 'react';
-import { X, Send, Euro, Star, AlertTriangle, Crown, Calculator } from 'lucide-react';
+import { X, Send, Star, AlertTriangle, Crown, Calculator } from 'lucide-react';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { calculateJobCommission } from '../lib/stripe';
+
+interface Job {
+  id: string;
+  job_type: 'cash' | 'karma';
+  karma_reward?: number;
+  fixed_amount?: number;
+  hourly_rate: number;
+  estimated_hours: number;
+}
+
+interface Profile {
+  id: string;
+  karma: number;
+  premium: boolean;
+}
 
 interface JobApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   isDark: boolean;
-  job: any;
-  user: any;
-  userProfile: any;
+  job: Job | null;
+  user: User;
+  userProfile: Profile | null;
   onSuccess: () => void;
 }
 
@@ -59,8 +75,9 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
       onSuccess();
       onClose();
       setApplicationData({ message: '', hourlyRate: '', experience: '' });
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error) {
+      const err = error as { message?: string };
+      setError(err.message || 'Unbekannter Fehler');
     } finally {
       setLoading(false);
     }

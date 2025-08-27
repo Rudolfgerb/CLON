@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  BarChart3, Users, Briefcase, GraduationCap, Euro, 
-  TrendingUp, Activity, Crown, AlertCircle, RefreshCw,
-  Settings, LogOut, Search, Bell, Menu, X
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  BarChart3, Users, Briefcase, GraduationCap, Euro,
+  Crown, RefreshCw, Settings, LogOut, Search, Bell, Menu
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import AdminStats from './admin/AdminStats';
@@ -12,31 +11,43 @@ import AdminCourses from './admin/AdminCourses';
 import AdminPayments from './admin/AdminPayments';
 import AdminSettings from './admin/AdminSettings';
 
+interface Profile {
+  id: string;
+  email: string;
+  full_name: string;
+  karma: number;
+  level: number;
+  premium: boolean;
+}
+
 interface AdminDashboardProps {
-  user: any;
-  userProfile: any;
+  userProfile: Profile | null;
   isDark: boolean;
-  onToggleTheme: () => void;
   onExitAdmin: () => void;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
-  user, 
-  userProfile, 
-  isDark, 
-  onToggleTheme, 
-  onExitAdmin 
+const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  userProfile,
+  isDark,
+  onExitAdmin
 }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [stats, setStats] = useState<any>(null);
+  interface AdminStatsData {
+    total_users: number;
+    new_users_30d: number;
+    active_jobs: number;
+    new_jobs_30d: number;
+    premium_users: number;
+    commission_30d: number;
+    total_wallet_balance: number;
+    new_applications_30d: number;
+  }
+
+  const [stats, setStats] = useState<AdminStatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAdminStats();
-  }, []);
-
-  const loadAdminStats = async () => {
+  const loadAdminStats = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('admin_stats')
@@ -50,7 +61,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadAdminStats();
+  }, [loadAdminStats]);
 
   const menuItems = [
     { id: 'dashboard', icon: BarChart3, label: 'Dashboard', color: 'text-blue-500' },

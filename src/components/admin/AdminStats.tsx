@@ -1,12 +1,23 @@
 import React from 'react';
-import { 
-  Users, Briefcase, GraduationCap, Euro, TrendingUp, 
-  Crown, Activity, DollarSign, Calendar, Award
+import {
+  Users, Briefcase, GraduationCap, Euro, TrendingUp,
+  Crown, DollarSign
 } from 'lucide-react';
+
+interface AdminStatsData {
+  total_users?: number;
+  new_users_30d?: number;
+  active_jobs?: number;
+  new_jobs_30d?: number;
+  premium_users?: number;
+  commission_30d?: number;
+  total_wallet_balance?: number;
+  new_applications_30d?: number;
+}
 
 interface AdminStatsProps {
   isDark: boolean;
-  stats: any;
+  stats: AdminStatsData | null;
   loading: boolean;
 }
 

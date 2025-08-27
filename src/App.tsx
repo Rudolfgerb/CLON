@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { Home, Briefcase, Plus, GraduationCap, MoreHorizontal, User, Euro, Star, Sun, Moon } from 'lucide-react';
 import AuthPage from './components/AuthPage';
@@ -10,11 +11,20 @@ import SuccessPage from './components/SuccessPage';
 import AdminAuth from './components/AdminAuth';
 import AdminDashboard from './components/AdminDashboard';
 
+interface Profile {
+  id: string;
+  email: string;
+  full_name: string;
+  karma: number;
+  level: number;
+  premium: boolean;
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [isDark, setIsDark] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -29,30 +39,7 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      } else {
-        setUserProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -91,7 +78,30 @@ function App() {
     } catch (error) {
       console.error('Error in loadUserProfile:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      } else {
+        setUserProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [loadUserProfile]);
 
   if (loading) {
     return (
@@ -110,10 +120,8 @@ function App() {
     return (
       <AdminAuth user={user} isDark={isDark}>
         <AdminDashboard
-          user={user}
           userProfile={userProfile}
           isDark={isDark}
-          onToggleTheme={() => setIsDark(!isDark)}
           onExitAdmin={() => setShowAdmin(false)}
         />
       </AdminAuth>

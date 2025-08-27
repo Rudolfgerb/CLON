@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     }
 
     // Get or create Stripe customer
-    let { data: customer } = await supabase
+    const { data: customer } = await supabase
       .from('stripe_customers')
       .select('customer_id')
       .eq('user_id', user.id)
@@ -99,10 +99,11 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as { message?: string };
     console.error('Checkout error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: err.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

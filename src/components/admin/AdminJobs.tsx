@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Briefcase, Search, Filter, Euro, Star, MapPin, Clock, 
-  Eye, Edit, Trash2, CheckCircle, XCircle, Users
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Briefcase, Search, Euro, Star, MapPin, Clock,
+  Eye, Trash2, CheckCircle, XCircle, Users
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -27,7 +27,7 @@ interface Job {
     full_name: string;
     email: string;
   };
-  applications: any[];
+  applications: { id: string; status: string }[];
 }
 
 const AdminJobs: React.FC<AdminJobsProps> = ({ isDark }) => {
@@ -37,11 +37,7 @@ const AdminJobs: React.FC<AdminJobsProps> = ({ isDark }) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  useEffect(() => {
-    loadJobs();
-  }, []);
-
-  const loadJobs = async () => {
+  const loadJobs = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
@@ -65,7 +61,11 @@ const AdminJobs: React.FC<AdminJobsProps> = ({ isDark }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
 
   const updateJobStatus = async (jobId: string, newStatus: string) => {
     try {

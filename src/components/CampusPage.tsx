@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BookOpen, Play, Star, Clock, Award, TrendingUp } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import React, { useState, useEffect, useMemo } from 'react';
+import { BookOpen, Play, Star, TrendingUp } from 'lucide-react';
 
 interface Course {
   id: string;
@@ -32,8 +31,7 @@ const CampusPage: React.FC<CampusPageProps> = ({ isDark }) => {
     { id: 'marketing', label: 'Marketing', icon: '📈' }
   ];
 
-  // Mock courses data
-  const mockCourses: Course[] = [
+  const mockCourses = useMemo<Course[]>(() => [
     {
       id: '1',
       title: 'React Grundlagen',
@@ -82,15 +80,14 @@ const CampusPage: React.FC<CampusPageProps> = ({ isDark }) => {
       lessons_count: 5,
       completed_count: 723
     }
-  ];
+  ], []);
 
   useEffect(() => {
-    // Simulate loading
     setTimeout(() => {
       setCourses(mockCourses);
       setLoading(false);
     }, 1000);
-  }, []);
+  }, [mockCourses]);
 
   const filteredCourses = courses.filter(course => 
     selectedCategory === 'all' || course.category === selectedCategory

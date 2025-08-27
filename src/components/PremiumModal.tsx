@@ -25,8 +25,9 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, isDark }) 
         product_type: productKey,
         product_id: product.id
       });
-    } catch (error: any) {
-      setError(error.message || 'Fehler beim Erstellen der Checkout-Session');
+    } catch (error) {
+      const err = error as { message?: string };
+      setError(err.message || 'Fehler beim Erstellen der Checkout-Session');
     } finally {
       setLoading(null);
     }
