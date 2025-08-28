@@ -114,36 +114,6 @@ const AdminJobs: React.FC<AdminJobsProps> = ({ isDark }) => {
     loadJobs();
   }, [loadJobs]);
 
-  const updateJobStatus = async (jobId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('jobs')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', jobId);
-
-      if (error) throw error;
-      loadJobs(); // Refresh data
-    } catch (error) {
-      console.error('Error updating job status:', error);
-    }
-  };
-
-  const deleteJob = async (jobId: string) => {
-    if (!confirm('Sind Sie sicher, dass Sie diesen Job löschen möchten?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('jobs')
-        .delete()
-        .eq('id', jobId);
-
-      if (error) throw error;
-      loadJobs(); // Refresh data
-    } catch (error) {
-      console.error('Error deleting job:', error);
-    }
-  };
-
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -151,23 +121,6 @@ const AdminJobs: React.FC<AdminJobsProps> = ({ isDark }) => {
     const matchesType = typeFilter === 'all' || job.job_type === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
-
-  const formatPayment = (job: Job) => {
-    if (job.job_type === 'cash') {
-      return job.fixed_amount ? `€${job.fixed_amount}` : `€${job.hourly_rate}/h`;
-    }
-    return `${job.karma_reward} Karma`;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-500/20 text-green-600';
-      case 'completed': return 'bg-blue-500/20 text-blue-600';
-      case 'cancelled': return 'bg-red-500/20 text-red-600';
-      case 'paused': return 'bg-yellow-500/20 text-yellow-600';
-      default: return 'bg-gray-500/20 text-gray-600';
-    }
-  };
 
   if (loading) {
     return (

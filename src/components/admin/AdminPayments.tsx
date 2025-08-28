@@ -30,25 +30,6 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ isDark }) => {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('30d');
 
-  const updateJobStatus = async (jobId: string, newStatus: string) => {
-    // Implementation for updating job status
-    console.log('Update job status:', jobId, newStatus);
-  };
-
-  const deleteJob = async (jobId: string) => {
-    // Implementation for deleting job
-    console.log('Delete job:', jobId);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-500/20 text-green-600';
-      case 'pending': return 'bg-yellow-500/20 text-yellow-600';
-      case 'failed': return 'bg-red-500/20 text-red-600';
-      default: return 'bg-gray-500/20 text-gray-600';
-    }
-  };
-
   const loadTransactions = useCallback(async () => {
     try {
       let query = supabase

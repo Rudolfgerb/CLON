@@ -78,7 +78,6 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
     }
   };
 
-  const jobAmount = job.fixed_amount || ((job.hourly_rate || 0) * job.estimated_hours);
   const jobAmount = job.fixed_amount || ((job.hourly_rate || 0) * (job.estimated_hours || job.expected_duration || 1));
   const commission = job.job_type === 'cash' ? calculateJobCommission(jobAmount, userProfile?.premium || false) : null;
 
