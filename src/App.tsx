@@ -18,6 +18,7 @@ interface Profile {
   karma: number;
   level: number;
   premium: boolean;
+  role?: string;
 }
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [jobCreationType, setJobCreationType] = useState<'cash' | 'karma' | null>(null);
 
   useEffect(() => {
     // Check for Stripe success/cancel params
@@ -182,7 +184,10 @@ function App() {
       case 'more':
         return <MoreMenu isDark={isDark} user={user} userProfile={userProfile} onToggleTheme={() => setIsDark(!isDark)} onShowAdmin={() => setShowAdmin(true)} />;
       case 'add':
-        return <CreateJobPage isDark={isDark} user={user} onBack={() => setActiveTab('home')} />;
+        return <CreateJobPage isDark={isDark} user={user} jobType={jobCreationType} onBack={() => {
+          setActiveTab('home');
+          setJobCreationType(null);
+        }} />;
       default:
         return (
           <div className="flex-1 overflow-y-auto pb-32">

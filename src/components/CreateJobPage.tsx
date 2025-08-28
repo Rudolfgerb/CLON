@@ -140,30 +140,31 @@ const CreateJobPage: React.FC<CreateJobPageProps> = ({ isDark, user, jobType, on
       const jobPayload = {
         title: jobData.title,
         description: jobData.description,
-        job_type: selectedJobType,
+        category: 'general',
         location: jobData.location,
-        difficulty: jobData.difficulty,
+        difficulty_level: jobData.difficulty,
+        budget_type: selectedJobType === 'cash' ? (jobData.fixedAmount ? 'fixed' : 'hourly') : 'fixed',
+        budget_amount: selectedJobType === 'cash' 
+          ? (jobData.fixedAmount ? parseFloat(jobData.fixedAmount) : parseFloat(jobData.hourlyRate))
+          : 0,
+        payment_type: selectedJobType,
+        cash_amount: selectedJobType === 'cash' 
+          ? (jobData.fixedAmount ? parseFloat(jobData.fixedAmount) : parseFloat(jobData.hourlyRate) * parseInt(jobData.estimatedHours))
+          : 0,
+        karma_amount: selectedJobType === 'karma' ? parseInt(jobData.karmaReward) : 0,
+        additional_karma: selectedJobType === 'cash' && jobData.additionalKarma ? parseInt(jobData.additionalKarma) : 0,
+        additional_cash: selectedJobType === 'karma' && jobData.additionalCash ? parseFloat(jobData.additionalCash) : 0,
         tags: tagsArray,
-        requirements: jobData.requirements || null,
+        requirements: jobData.requirements ? [jobData.requirements] : [],
         deliverables: jobData.deliverables,
-        estimated_hours: parseInt(jobData.estimatedHours),
+        expected_duration: parseInt(jobData.estimatedHours),
         deadline: deadline.toISOString(),
-        
-        // Haupt-Bezahlung
-        hourly_rate: selectedJobType === 'cash' && jobData.hourlyRate ? parseFloat(jobData.hourlyRate) : null,
-        fixed_amount: selectedJobType === 'cash' && jobData.fixedAmount ? parseFloat(jobData.fixedAmount) : null,
-        karma_reward: selectedJobType === 'karma' ? parseInt(jobData.karmaReward) : null,
-        
-        // Zusätzliche Bezahlung
-        additional_karma: selectedJobType === 'cash' && jobData.additionalKarma ? parseInt(jobData.additionalKarma) : null,
-        additional_cash: selectedJobType === 'karma' && jobData.additionalCash ? parseFloat(jobData.additionalCash) : null,
-        
-        status: 'active',
-        created_by: user.id
+        status: 'open',
+        creator_id: user.id
       };
 
       const { error: insertError } = await supabase
-        .from('job_posts')
+        .from('jobs')
         .insert(jobPayload);
 
       if (insertError) throw insertError;

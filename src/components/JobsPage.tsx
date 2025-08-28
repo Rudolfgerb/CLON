@@ -34,26 +34,26 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
   const loadJobs = useCallback(async () => {
     try {
         const { data, error } = await supabase
-          .from('job_posts')
+          .from('jobs')
           .select(`
             *,
-            profiles (
+            profiles:creator_id (
               full_name,
               premium
             ),
             job_media (
               id,
-            file_name,
-            file_path,
-            file_type,
-            is_title_image
-          ),
-          job_applications!job_applications_job_id_fkey (
-            id,
-            status
-          )
-        `)
-        .eq('status', 'active')
+              file_name,
+              file_path,
+              file_type,
+              is_title_image
+            ),
+            applications (
+              id,
+              status
+            )
+          `)
+        .eq('status', 'open')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -78,7 +78,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
 
     const formatPayment = (job: JobPost) => {
     if (job.job_type === 'cash') {
-      const amount = job.fixed_amount || ((job.hourly_rate || 0) * job.estimated_hours);
+      const amount = job.fixed_amount || ((job.hourly_rate || 0) * (job.estimated_hours || job.expected_duration || 1));
       return `€${amount.toFixed(2)}`;
     }
     return `${job.karma_reward} Karma`;
@@ -86,7 +86,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
 
     const getNetPayment = (job: JobPost) => {
     if (job.job_type === 'cash') {
-      const amount = job.fixed_amount || ((job.hourly_rate || 0) * job.estimated_hours);
+      const amount = job.fixed_amount || ((job.hourly_rate || 0) * (job.estimated_hours || job.expected_duration || 1));
       const commission = calculateJobCommission(amount, userProfile?.premium || false);
       return `€${commission.netAmount.toFixed(2)} netto`;
     }
@@ -149,7 +149,7 @@ const JobsPage: React.FC<JobsPageProps> = ({ isDark, user, userProfile }) => {
                   </div>
                   <div className={`flex items-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     <Clock className="w-4 h-4 mr-1" />
-                    {selectedJob.estimated_hours}h
+                    {job.estimated_hours || job.expected_duration}h
                   </div>
                 </div>
 

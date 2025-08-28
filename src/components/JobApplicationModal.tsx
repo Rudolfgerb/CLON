@@ -37,6 +37,10 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Check if user has enough karma for karma jobs
+  const hasEnoughKarma = job?.job_type === 'karma' ? 
+    (userProfile?.karma || 0) >= (job?.karma_reward || 0) : true;
+
   if (!isOpen || !job) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,18 +50,18 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
 
     try {
       // Check karma for karma jobs
-      if (job.job_type === 'karma' && userProfile.karma < (job.karma_reward || 0)) {
+      if (job.job_type === 'karma' && (userProfile?.karma || 0) < (job.karma_reward || 0)) {
         throw new Error('Nicht genügend Karma für diese Bewerbung');
       }
 
       const { error } = await supabase
-        .from('job_applications')
+        .from('applications')
         .insert({
           job_id: job.id,
           applicant_id: user.id,
-          message: applicationData.message,
-          proposed_hourly_rate: applicationData.hourlyRate ? parseFloat(applicationData.hourlyRate) : null,
-          experience: applicationData.experience,
+          cover_letter: applicationData.message,
+          proposed_amount: applicationData.hourlyRate ? parseFloat(applicationData.hourlyRate) : null,
+          estimated_time: null,
           status: 'pending'
         });
 
@@ -75,6 +79,7 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
   };
 
   const jobAmount = job.fixed_amount || ((job.hourly_rate || 0) * job.estimated_hours);
+  const jobAmount = job.fixed_amount || ((job.hourly_rate || 0) * (job.estimated_hours || job.expected_duration || 1));
   const commission = job.job_type === 'cash' ? calculateJobCommission(jobAmount, userProfile?.premium || false) : null;
 
   // Check if user has enough karma for karma jobs

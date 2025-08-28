@@ -43,7 +43,7 @@ const AdminJobs: React.FC<AdminJobsProps> = ({ isDark }) => {
         .from('jobs')
         .select(`
           *,
-          profiles:created_by (
+          profiles:creator_id (
             full_name,
             email
           ),
@@ -62,6 +62,53 @@ const AdminJobs: React.FC<AdminJobsProps> = ({ isDark }) => {
       setLoading(false);
     }
   }, []);
+
+  const updateJobStatus = async (jobId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', jobId);
+
+      if (error) throw error;
+      loadJobs(); // Refresh data
+    } catch (error) {
+      console.error('Error updating job status:', error);
+    }
+  };
+
+  const deleteJob = async (jobId: string) => {
+    if (!confirm('Sind Sie sicher, dass Sie diesen Job löschen möchten?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .delete()
+        .eq('id', jobId);
+
+      if (error) throw error;
+      loadJobs(); // Refresh data
+    } catch (error) {
+      console.error('Error deleting job:', error);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'bg-green-500/20 text-green-600';
+      case 'in_progress': return 'bg-blue-500/20 text-blue-600';
+      case 'completed': return 'bg-purple-500/20 text-purple-600';
+      case 'cancelled': return 'bg-red-500/20 text-red-600';
+      default: return 'bg-gray-500/20 text-gray-600';
+    }
+  };
+
+  const formatPayment = (job: Job) => {
+    if (job.job_type === 'cash') {
+      return job.fixed_amount ? `€${job.fixed_amount}` : `€${job.hourly_rate}/h`;
+    }
+    return `${job.karma_reward} Karma`;
+  };
 
   useEffect(() => {
     loadJobs();

@@ -19,22 +19,22 @@ export interface JobPost {
   tags: string[];
   requirements: string | null;
   deliverables: string;
-  estimated_hours: number;
+  estimated_hours?: number;
+  expected_duration?: number;
   deadline: string | null;
   hourly_rate: number | null;
   fixed_amount: number | null;
   karma_reward: number | null;
   additional_karma: number;
   additional_cash: number;
-  status: 'active' | 'paused' | 'completed' | 'cancelled';
-  featured: boolean;
-  created_by: string;
+  status: 'open' | 'in_progress' | 'completed' | 'cancelled';
+  creator_id: string;
   created_at: string;
   updated_at: string;
   // Relations
   profiles?: Profile;
   job_media?: JobMedia[];
-  job_applications?: JobApplication[];
+  applications?: JobApplication[];
 }
 
 export interface JobMedia {

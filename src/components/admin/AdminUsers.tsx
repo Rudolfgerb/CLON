@@ -26,6 +26,16 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ isDark }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
+  // Mock functions for demo - replace with real implementations
+  const updateUserRole = async (userId: string, role: string) => {
+    console.log('Update user role:', userId, role);
+    // TODO: Implement with Supabase
+  };
+
+  const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
+    console.log('Toggle user status:', userId, !currentStatus);
+    // TODO: Implement with Supabase
+  };
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
