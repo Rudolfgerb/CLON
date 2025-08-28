@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
+import { JobProvider } from './context/JobContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { Home, Briefcase, Plus, GraduationCap, MoreHorizontal, User, Euro, Star, Sun, Moon } from 'lucide-react';
 import AuthPage from './components/AuthPage';
 import JobsPage from './components/JobsPage';
@@ -254,70 +256,74 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-      {/* Header */}
-      <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} transition-colors duration-500`}>
-        <div className="flex items-center justify-between p-6">
-          <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center`}>
-              <User className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {userProfile?.full_name || 'Mutuus User'}
-              </h1>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Karma: {userProfile?.karma || 0} Punkte
-              </p>
+    <ErrorBoundary>
+      <JobProvider user={user}>
+        <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+          {/* Header */}
+          <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} transition-colors duration-500`}>
+            <div className="flex items-center justify-between p-6">
+              <div className="flex items-center space-x-3">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center`}>
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {userProfile?.full_name || 'Mutuus User'}
+                  </h1>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Karma: {userProfile?.karma || 0} Punkte
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className={`font-bold text-lg text-green-500`}>€250</span>
+                <button
+                  onClick={() => setIsDark(!isDark)}
+                  className={`p-2 rounded-full ${isDark ? 'bg-slate-700 text-yellow-400' : 'bg-gray-200 text-gray-700'} hover:scale-110 transition-all duration-300`}
+                >
+                  {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className={`font-bold text-lg text-green-500`}>€250</span>
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className={`p-2 rounded-full ${isDark ? 'bg-slate-700 text-yellow-400' : 'bg-gray-200 text-gray-700'} hover:scale-110 transition-all duration-300`}
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+
+          {/* Main Content */}
+          {renderContent()}
+
+          {/* Bottom Navigation */}
+          <div className="fixed bottom-0 left-0 right-0 z-50">
+            <div className={`${isDark ? 'bg-slate-800/95 backdrop-blur-xl border-slate-700' : 'bg-white/95 backdrop-blur-xl border-gray-200'} border-t`}>
+              <div className="flex items-center justify-around py-2 px-4">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 ${
+                      item.isCenter
+                        ? `w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:scale-110 ${
+                            activeTab === item.id ? 'scale-105 shadow-xl' : ''
+                          }`
+                        : `w-16 h-16 ${
+                            activeTab === item.id
+                              ? `${isDark ? 'bg-slate-700 text-blue-400' : 'bg-blue-50 text-blue-600'} scale-110`
+                              : `${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} hover:scale-105`
+                          }`
+                    }`}
+                  >
+                    <item.icon className={`${item.isCenter ? 'w-10 h-10' : 'w-8 h-8'} transition-transform duration-300`} />
+                    {!item.isCenter && (
+                      <span className={`text-sm mt-1 font-medium ${activeTab === item.id ? 'opacity-100' : 'opacity-70'}`}>
+                        {item.label}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      {renderContent()}
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <div className={`${isDark ? 'bg-slate-800/95 backdrop-blur-xl border-slate-700' : 'bg-white/95 backdrop-blur-xl border-gray-200'} border-t`}>
-          <div className="flex items-center justify-around py-2 px-4">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 ${
-                  item.isCenter
-                    ? `w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:scale-110 ${
-                        activeTab === item.id ? 'scale-105 shadow-xl' : ''
-                      }`
-                    : `w-16 h-16 ${
-                        activeTab === item.id
-                          ? `${isDark ? 'bg-slate-700 text-blue-400' : 'bg-blue-50 text-blue-600'} scale-110`
-                          : `${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} hover:scale-105`
-                      }`
-                }`}
-              >
-                <item.icon className={`${item.isCenter ? 'w-10 h-10' : 'w-8 h-8'} transition-transform duration-300`} />
-                {!item.isCenter && (
-                  <span className={`text-sm mt-1 font-medium ${activeTab === item.id ? 'opacity-100' : 'opacity-70'}`}>
-                    {item.label}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+      </JobProvider>
+    </ErrorBoundary>
   );
 }
 
